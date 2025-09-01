@@ -376,7 +376,7 @@ export default function SuraScreen() {
         keyExtractor={(item) => item.id.toString()}
         showsVerticalScrollIndicator={false}
         ListHeaderComponent={renderHeader}
-        contentContainerStyle={{ paddingTop: 20, paddingBottom: 20 }}
+        contentContainerStyle={{ paddingTop: 20, paddingBottom: 140 }}
       />
     </View>
   );

@@ -7,6 +7,7 @@ import {
   ScrollView,
   TouchableOpacity,
   Dimensions,
+  Platform,
 } from "react-native";
 import { DrawerContentScrollView, DrawerItem } from "@react-navigation/drawer";
 import { router } from "expo-router";
@@ -16,6 +17,7 @@ import { FontProvider } from "../contexts/FontContext";
 import { useTheme } from "../contexts/ThemeContext";
 import { useLanguage } from "../contexts/LanguageContext";
 import { useFont } from "../contexts/FontContext";
+import FloatingTabBar from "../components/FloatingTabBar";
 
 const { width } = Dimensions.get("window");
 
@@ -279,27 +281,8 @@ function TabLayout() {
 
   return (
     <Tabs
+      tabBar={(props) => <FloatingTabBar {...props} />}
       screenOptions={{
-        tabBarActiveTintColor: colors.primary,
-        tabBarInactiveTintColor: colors.textTertiary,
-        tabBarStyle: {
-          backgroundColor: colors.surface,
-          borderTopWidth: 1,
-          borderTopColor: colors.border,
-          height: 80,
-          paddingBottom: 10,
-          paddingTop: 10,
-          elevation: 8,
-          shadowColor: isDark ? colors.text : "#000",
-          shadowOffset: { width: 0, height: -2 },
-          shadowOpacity: 0.1,
-          shadowRadius: 4,
-        },
-        tabBarLabelStyle: {
-          fontSize: 12,
-          fontWeight: "600",
-          marginTop: 4,
-        },
         headerShown: false,
       }}
     >
@@ -307,53 +290,13 @@ function TabLayout() {
         name="index"
         options={{
           title: t("navigation.home"),
-          tabBarIcon: ({ color, focused }) => (
-            <View
-              style={{
-                alignItems: "center",
-                justifyContent: "center",
-                width: 48,
-                height: 48,
-                borderRadius: 24,
-                backgroundColor: focused
-                  ? colors.primaryLight + "20"
-                  : "transparent",
-              }}
-            >
-              <Ionicons
-                name={focused ? "home" : "home-outline"}
-                size={focused ? 26 : 24}
-                color={color}
-              />
-            </View>
-          ),
         }}
       />
 
       <Tabs.Screen
         name="sura-list"
         options={{
-          title: t("navigation.suras"),
-          tabBarIcon: ({ color, focused }) => (
-            <View
-              style={{
-                alignItems: "center",
-                justifyContent: "center",
-                width: 48,
-                height: 48,
-                borderRadius: 24,
-                backgroundColor: focused
-                  ? colors.primaryLight + "20"
-                  : "transparent",
-              }}
-            >
-              <MaterialIcons
-                name="list"
-                size={focused ? 26 : 24}
-                color={color}
-              />
-            </View>
-          ),
+          title: t("navigation.suraList"),
         }}
       />
 
@@ -361,26 +304,6 @@ function TabLayout() {
         name="settings"
         options={{
           title: t("navigation.settings"),
-          tabBarIcon: ({ color, focused }) => (
-            <View
-              style={{
-                alignItems: "center",
-                justifyContent: "center",
-                width: 48,
-                height: 48,
-                borderRadius: 24,
-                backgroundColor: focused
-                  ? colors.primaryLight + "20"
-                  : "transparent",
-              }}
-            >
-              <Ionicons
-                name={focused ? "settings" : "settings-outline"}
-                size={focused ? 26 : 24}
-                color={color}
-              />
-            </View>
-          ),
         }}
       />
 

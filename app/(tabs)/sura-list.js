@@ -8,9 +8,8 @@ import {
 } from "react-native";
 import { useRouter } from "expo-router";
 import { Ionicons, MaterialIcons } from "@expo/vector-icons";
-import CustomTabBar from "../components/CustomTabBar";
 
-// Sample sura data - you can replace this with your actual data
+// Sample sura data
 const suraList = [
   {
     id: 1,
@@ -105,54 +104,90 @@ export default function SuraScreen() {
 
   const renderSuraItem = ({ item }) => (
     <TouchableOpacity
-      className="bg-white mx-4 mb-3 rounded-2xl shadow-sm border border-gray-100"
       style={{
+        backgroundColor: "white",
+        marginHorizontal: 16,
+        marginBottom: 12,
+        borderRadius: 16,
         shadowColor: "#000",
         shadowOffset: { width: 0, height: 2 },
         shadowOpacity: 0.08,
         shadowRadius: 3.84,
         elevation: 5,
+        borderWidth: 1,
+        borderColor: "#f3f4f6",
       }}
       onPress={() => router.push(`/sura/${item.id}`)}
     >
-      <View className="flex-row items-center p-4">
-        {/* Sura Number */}
-        <View className="w-12 h-12 bg-green-100 rounded-full items-center justify-center mr-4">
-          <Text className="text-green-700 font-bold text-base">{item.id}</Text>
+      <View style={{ flexDirection: "row", alignItems: "center", padding: 16 }}>
+        <View
+          style={{
+            width: 48,
+            height: 48,
+            backgroundColor: "#f0fdf4",
+            borderRadius: 24,
+            alignItems: "center",
+            justifyContent: "center",
+            marginRight: 16,
+          }}
+        >
+          <Text style={{ color: "#065f46", fontWeight: "bold", fontSize: 16 }}>
+            {item.id}
+          </Text>
         </View>
 
-        {/* Sura Details */}
-        <View className="flex-1">
-          <Text className="text-gray-800 text-lg font-bold mb-1">
+        <View style={{ flex: 1 }}>
+          <Text
+            style={{
+              color: "#1f2937",
+              fontSize: 18,
+              fontWeight: "bold",
+              marginBottom: 4,
+            }}
+          >
             {item.name}
           </Text>
-          <Text className="text-gray-500 text-sm mb-1">{item.englishName}</Text>
-          <View className="flex-row items-center">
-            <View className="flex-row items-center mr-4">
+          <Text style={{ color: "#6b7280", fontSize: 14, marginBottom: 4 }}>
+            {item.englishName}
+          </Text>
+          <View style={{ flexDirection: "row", alignItems: "center" }}>
+            <View
+              style={{
+                flexDirection: "row",
+                alignItems: "center",
+                marginRight: 16,
+              }}
+            >
               <Ionicons
                 name="document-text-outline"
                 size={14}
                 color="#9ca3af"
               />
-              <Text className="text-gray-400 text-xs ml-1">
+              <Text style={{ color: "#9ca3af", fontSize: 12, marginLeft: 4 }}>
                 {item.verses} verses
               </Text>
             </View>
-            <View className="flex-row items-center">
+            <View style={{ flexDirection: "row", alignItems: "center" }}>
               <MaterialIcons
                 name={item.revelation === "Meccan" ? "location-city" : "domain"}
                 size={14}
                 color="#9ca3af"
               />
-              <Text className="text-gray-400 text-xs ml-1">
+              <Text style={{ color: "#9ca3af", fontSize: 12, marginLeft: 4 }}>
                 {item.revelation}
               </Text>
             </View>
           </View>
         </View>
 
-        {/* Arrow */}
-        <View className="w-8 h-8 items-center justify-center">
+        <View
+          style={{
+            width: 32,
+            height: 32,
+            alignItems: "center",
+            justifyContent: "center",
+          }}
+        >
           <Ionicons name="chevron-forward" size={20} color="#d1d5db" />
         </View>
       </View>
@@ -160,12 +195,34 @@ export default function SuraScreen() {
   );
 
   const renderHeader = () => (
-    <View className="mx-4 mb-6">
+    <View style={{ marginHorizontal: 16, marginBottom: 24 }}>
       {/* Search Bar */}
-      <View className="bg-white rounded-2xl shadow-sm border border-gray-100 flex-row items-center px-4 py-3 mb-4">
+      <View
+        style={{
+          backgroundColor: "white",
+          borderRadius: 16,
+          shadowColor: "#000",
+          shadowOffset: { width: 0, height: 1 },
+          shadowOpacity: 0.05,
+          shadowRadius: 2,
+          elevation: 2,
+          borderWidth: 1,
+          borderColor: "#f3f4f6",
+          flexDirection: "row",
+          alignItems: "center",
+          paddingHorizontal: 16,
+          paddingVertical: 12,
+          marginBottom: 16,
+        }}
+      >
         <Ionicons name="search" size={20} color="#9ca3af" />
         <TextInput
-          className="flex-1 ml-3 text-gray-700 text-base"
+          style={{
+            flex: 1,
+            marginLeft: 12,
+            color: "#374151",
+            fontSize: 16,
+          }}
           placeholder="Search suras..."
           placeholderTextColor="#9ca3af"
           value={searchQuery}
@@ -179,48 +236,103 @@ export default function SuraScreen() {
       </View>
 
       {/* Quick Stats */}
-      <View className="flex-row justify-between mb-4">
-        <View className="bg-gradient-to-r from-blue-500 to-blue-600 rounded-xl p-4 flex-1 mr-2">
-          <View className="flex-row items-center mb-2">
+      <View
+        style={{
+          flexDirection: "row",
+          justifyContent: "space-between",
+          marginBottom: 16,
+        }}
+      >
+        <View
+          style={{
+            backgroundColor: "#3b82f6",
+            borderRadius: 12,
+            padding: 16,
+            flex: 1,
+            marginRight: 8,
+          }}
+        >
+          <View
+            style={{
+              flexDirection: "row",
+              alignItems: "center",
+              marginBottom: 8,
+            }}
+          >
             <MaterialIcons name="book" size={20} color="white" />
-            <Text className="text-white text-sm font-medium ml-2">
+            <Text
+              style={{
+                color: "white",
+                fontSize: 14,
+                fontWeight: "500",
+                marginLeft: 8,
+              }}
+            >
               Total Suras
             </Text>
           </View>
-          <Text className="text-white text-2xl font-bold">114</Text>
+          <Text style={{ color: "white", fontSize: 24, fontWeight: "bold" }}>
+            114
+          </Text>
         </View>
 
-        <View className="bg-gradient-to-r from-purple-500 to-purple-600 rounded-xl p-4 flex-1 ml-2">
-          <View className="flex-row items-center mb-2">
+        <View
+          style={{
+            backgroundColor: "#8b5cf6",
+            borderRadius: 12,
+            padding: 16,
+            flex: 1,
+            marginLeft: 8,
+          }}
+        >
+          <View
+            style={{
+              flexDirection: "row",
+              alignItems: "center",
+              marginBottom: 8,
+            }}
+          >
             <MaterialIcons name="format-quote" size={20} color="white" />
-            <Text className="text-white text-sm font-medium ml-2">
+            <Text
+              style={{
+                color: "white",
+                fontSize: 14,
+                fontWeight: "500",
+                marginLeft: 8,
+              }}
+            >
               Total Verses
             </Text>
           </View>
-          <Text className="text-white text-2xl font-bold">6,236</Text>
+          <Text style={{ color: "white", fontSize: 24, fontWeight: "bold" }}>
+            6,236
+          </Text>
         </View>
       </View>
 
-      {/* Section Title */}
-      <Text className="text-gray-800 text-xl font-bold mb-2">
+      <Text
+        style={{
+          color: "#1f2937",
+          fontSize: 20,
+          fontWeight: "bold",
+          marginBottom: 8,
+        }}
+      >
         All Suras {searchQuery && `(${filteredSuras.length} found)`}
       </Text>
     </View>
   );
 
   return (
-    <View className="flex-1 bg-gray-50">
+    <View style={{ flex: 1, backgroundColor: "#f9fafb" }}>
       <FlatList
         data={filteredSuras}
         renderItem={renderSuraItem}
         keyExtractor={(item) => item.id.toString()}
         showsVerticalScrollIndicator={false}
         ListHeaderComponent={renderHeader}
-        contentContainerStyle={{ paddingTop: 20, paddingBottom: 100 }}
+        contentContainerStyle={{ paddingTop: 20, paddingBottom: 20 }}
       />
-
-      {/* Custom Tab Bar */}
-      <CustomTabBar />
     </View>
   );
 }

@@ -1,7 +1,6 @@
 import React, { useState } from "react";
 import { View, Text, TouchableOpacity, ScrollView, Switch } from "react-native";
 import { Ionicons, MaterialIcons } from "@expo/vector-icons";
-import CustomTabBar from "../components/CustomTabBar";
 
 export default function Settings() {
   const [darkMode, setDarkMode] = useState(false);
@@ -36,13 +35,6 @@ export default function Settings() {
           type: "navigation",
           value: "Medium",
         },
-        {
-          label: "Text Color",
-          icon: "color-palette",
-          iconType: "Ionicons",
-          type: "navigation",
-          value: "Default",
-        },
       ],
     },
     {
@@ -61,14 +53,6 @@ export default function Settings() {
           iconType: "Ionicons",
           type: "navigation",
           value: "High",
-        },
-        {
-          label: "Auto-play Next",
-          icon: "play-forward",
-          iconType: "Ionicons",
-          type: "switch",
-          value: true,
-          onToggle: () => {},
         },
       ],
     },
@@ -91,43 +75,6 @@ export default function Settings() {
           value: notifications,
           onToggle: setNotifications,
         },
-        {
-          label: "Language",
-          icon: "language",
-          iconType: "Ionicons",
-          type: "navigation",
-          value: "English",
-        },
-      ],
-    },
-    {
-      title: "About",
-      items: [
-        {
-          label: "App Version",
-          icon: "information-circle",
-          iconType: "Ionicons",
-          type: "info",
-          value: "1.0.0",
-        },
-        {
-          label: "Privacy Policy",
-          icon: "shield-checkmark",
-          iconType: "Ionicons",
-          type: "navigation",
-        },
-        {
-          label: "Terms of Service",
-          icon: "document-text",
-          iconType: "Ionicons",
-          type: "navigation",
-        },
-        {
-          label: "Rate This App",
-          icon: "star",
-          iconType: "Ionicons",
-          type: "navigation",
-        },
       ],
     },
   ];
@@ -136,13 +83,28 @@ export default function Settings() {
     return (
       <View key={index}>
         <TouchableOpacity
-          className={`flex-row items-center justify-between py-4 px-4 ${
-            item.type === "info" ? "opacity-60" : ""
-          }`}
+          style={{
+            flexDirection: "row",
+            alignItems: "center",
+            justifyContent: "space-between",
+            paddingVertical: 16,
+            paddingHorizontal: 16,
+            opacity: item.type === "info" ? 0.6 : 1,
+          }}
           disabled={item.type === "info"}
         >
-          <View className="flex-row items-center flex-1">
-            <View className="w-10 h-10 bg-gray-100 rounded-full items-center justify-center mr-4">
+          <View style={{ flexDirection: "row", alignItems: "center", flex: 1 }}>
+            <View
+              style={{
+                width: 40,
+                height: 40,
+                backgroundColor: "#f3f4f6",
+                borderRadius: 20,
+                alignItems: "center",
+                justifyContent: "center",
+                marginRight: 16,
+              }}
+            >
               {item.iconType === "Ionicons" ? (
                 <Ionicons name={item.icon} size={20} color="#059669" />
               ) : (
@@ -150,17 +112,21 @@ export default function Settings() {
               )}
             </View>
 
-            <View className="flex-1">
-              <Text className="text-gray-800 text-base font-medium">
+            <View style={{ flex: 1 }}>
+              <Text
+                style={{ color: "#1f2937", fontSize: 16, fontWeight: "500" }}
+              >
                 {item.label}
               </Text>
               {item.value && item.type !== "switch" && (
-                <Text className="text-gray-500 text-sm mt-1">{item.value}</Text>
+                <Text style={{ color: "#6b7280", fontSize: 14, marginTop: 4 }}>
+                  {item.value}
+                </Text>
               )}
             </View>
           </View>
 
-          <View className="ml-4">
+          <View style={{ marginLeft: 16 }}>
             {item.type === "switch" ? (
               <Switch
                 value={item.value}
@@ -177,28 +143,62 @@ export default function Settings() {
 
         {index <
           settingsSections.find((s) => s.items.includes(item))?.items.length -
-            1 && <View className="h-px bg-gray-200 ml-14" />}
+            1 && (
+          <View
+            style={{ height: 1, backgroundColor: "#e5e7eb", marginLeft: 56 }}
+          />
+        )}
       </View>
     );
   };
 
   return (
-    <View className="flex-1 bg-gray-50">
+    <View style={{ flex: 1, backgroundColor: "#f9fafb" }}>
       <ScrollView
-        className="flex-1"
-        contentContainerStyle={{ paddingBottom: 100 }}
+        style={{ flex: 1 }}
+        contentContainerStyle={{ paddingBottom: 20 }}
         showsVerticalScrollIndicator={false}
       >
         {/* Profile Section */}
-        <View className="bg-gradient-to-br from-green-600 to-emerald-700 mx-4 mt-6 rounded-2xl p-6 shadow-lg">
-          <View className="items-center">
-            <View className="w-20 h-20 bg-white/20 rounded-full items-center justify-center mb-4">
+        <View
+          style={{
+            backgroundColor: "#059669",
+            marginHorizontal: 16,
+            marginTop: 24,
+            borderRadius: 16,
+            padding: 24,
+            shadowColor: "#000",
+            shadowOffset: { width: 0, height: 4 },
+            shadowOpacity: 0.15,
+            shadowRadius: 8,
+            elevation: 8,
+          }}
+        >
+          <View style={{ alignItems: "center" }}>
+            <View
+              style={{
+                width: 80,
+                height: 80,
+                backgroundColor: "rgba(255,255,255,0.2)",
+                borderRadius: 40,
+                alignItems: "center",
+                justifyContent: "center",
+                marginBottom: 16,
+              }}
+            >
               <MaterialIcons name="person" size={40} color="white" />
             </View>
-            <Text className="text-white text-xl font-bold mb-2">
+            <Text
+              style={{
+                color: "white",
+                fontSize: 20,
+                fontWeight: "bold",
+                marginBottom: 8,
+              }}
+            >
               Welcome, User
             </Text>
-            <Text className="text-green-100 text-sm">
+            <Text style={{ color: "#bbf7d0", fontSize: 14 }}>
               Reading progress: 12 Suras completed
             </Text>
           </View>
@@ -206,12 +206,35 @@ export default function Settings() {
 
         {/* Settings Sections */}
         {settingsSections.map((section, sectionIndex) => (
-          <View key={sectionIndex} className="mx-4 mt-6">
-            <Text className="text-gray-800 text-lg font-bold mb-3 ml-1">
+          <View
+            key={sectionIndex}
+            style={{ marginHorizontal: 16, marginTop: 24 }}
+          >
+            <Text
+              style={{
+                color: "#1f2937",
+                fontSize: 18,
+                fontWeight: "bold",
+                marginBottom: 12,
+                marginLeft: 4,
+              }}
+            >
               {section.title}
             </Text>
 
-            <View className="bg-white rounded-2xl shadow-sm border border-gray-100">
+            <View
+              style={{
+                backgroundColor: "white",
+                borderRadius: 16,
+                shadowColor: "#000",
+                shadowOffset: { width: 0, height: 1 },
+                shadowOpacity: 0.05,
+                shadowRadius: 2,
+                elevation: 2,
+                borderWidth: 1,
+                borderColor: "#f3f4f6",
+              }}
+            >
               {section.items.map((item, itemIndex) =>
                 renderSettingItem(item, itemIndex)
               )}
@@ -220,14 +243,37 @@ export default function Settings() {
         ))}
 
         {/* Footer */}
-        <View className="mx-4 mt-8 mb-4">
-          <View className="bg-green-50 rounded-2xl p-6 border border-green-100">
-            <View className="items-center">
+        <View style={{ marginHorizontal: 16, marginTop: 32, marginBottom: 16 }}>
+          <View
+            style={{
+              backgroundColor: "#f0fdf4",
+              borderRadius: 16,
+              padding: 24,
+              borderWidth: 1,
+              borderColor: "#bbf7d0",
+            }}
+          >
+            <View style={{ alignItems: "center" }}>
               <MaterialIcons name="book" size={32} color="#059669" />
-              <Text className="text-green-800 text-lg font-bold mt-3 mb-2">
+              <Text
+                style={{
+                  color: "#065f46",
+                  fontSize: 18,
+                  fontWeight: "bold",
+                  marginTop: 12,
+                  marginBottom: 8,
+                }}
+              >
                 Al-Quran App
               </Text>
-              <Text className="text-green-600 text-sm text-center leading-5">
+              <Text
+                style={{
+                  color: "#047857",
+                  fontSize: 14,
+                  textAlign: "center",
+                  lineHeight: 20,
+                }}
+              >
                 Experience the divine words of Allah with beautiful recitation,
                 translation, and spiritual guidance.
               </Text>
@@ -235,9 +281,6 @@ export default function Settings() {
           </View>
         </View>
       </ScrollView>
-
-      {/* Custom Tab Bar */}
-      <CustomTabBar />
     </View>
   );
 }

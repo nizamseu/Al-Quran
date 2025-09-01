@@ -1,36 +1,43 @@
 import { View, Text, ScrollView, TouchableOpacity } from "react-native";
 import { Ionicons, MaterialIcons } from "@expo/vector-icons";
 import { router } from "expo-router";
+import { useTheme } from "../../contexts/ThemeContext";
+import { useLanguage } from "../../contexts/LanguageContext";
+import { useFont } from "../../contexts/FontContext";
 
 export default function Home() {
+  const { colors, isDark } = useTheme();
+  const { t } = useLanguage();
+  const { getTextStyle } = useFont();
+
   const quickActions = [
     {
-      title: "Start Reading",
-      subtitle: "Continue your journey",
+      title: t("home.quickActions.startReading"),
+      subtitle: t("home.quickActions.continueJourney"),
       icon: "book",
       iconType: "Ionicons",
       color: "#3b82f6",
       action: () => router.push("/sura-list"),
     },
     {
-      title: "Bookmarks",
-      subtitle: "Saved verses",
+      title: t("home.quickActions.bookmarks"),
+      subtitle: t("home.quickActions.savedVerses"),
       icon: "bookmark",
       iconType: "Ionicons",
       color: "#8b5cf6",
       action: () => {},
     },
     {
-      title: "Prayer Times",
-      subtitle: "Today's schedule",
+      title: t("home.quickActions.prayerTimes"),
+      subtitle: t("home.quickActions.todaySchedule"),
       icon: "time",
       iconType: "Ionicons",
       color: "#f97316",
       action: () => {},
     },
     {
-      title: "Duas",
-      subtitle: "Daily supplications",
+      title: t("home.quickActions.duas"),
+      subtitle: t("home.quickActions.dailySupplications"),
       icon: "emoji-people",
       iconType: "MaterialIcons",
       color: "#14b8a6",
@@ -39,7 +46,7 @@ export default function Home() {
   ];
 
   return (
-    <View style={{ flex: 1, backgroundColor: "#f9fafb" }}>
+    <View style={{ flex: 1, backgroundColor: colors.background }}>
       <ScrollView
         style={{ flex: 1 }}
         contentContainerStyle={{ paddingBottom: 20 }}
@@ -48,12 +55,12 @@ export default function Home() {
         {/* Welcome Section */}
         <View
           style={{
-            backgroundColor: "#059669",
+            backgroundColor: colors.primary,
             marginHorizontal: 16,
             marginTop: 24,
             borderRadius: 16,
             padding: 24,
-            shadowColor: "#000",
+            shadowColor: isDark ? colors.text : "#000",
             shadowOffset: { width: 0, height: 4 },
             shadowOpacity: 0.15,
             shadowRadius: 8,
@@ -81,12 +88,23 @@ export default function Home() {
             </View>
             <View style={{ marginLeft: 16, flex: 1 }}>
               <Text
-                style={{ color: "white", fontSize: 18, fontWeight: "bold" }}
+                style={{
+                  color: "white",
+                  fontSize: 18,
+                  fontWeight: "bold",
+                  ...getTextStyle("title", "bold"),
+                }}
               >
-                Welcome to Al-Quran
+                {t("home.welcome.title")}
               </Text>
-              <Text style={{ color: "#bbf7d0", fontSize: 14 }}>
-                Read, Reflect, Remember
+              <Text
+                style={{
+                  color: isDark ? "#d1d5db" : "#bbf7d0",
+                  fontSize: 14,
+                  ...getTextStyle("body"),
+                }}
+              >
+                {t("home.welcome.subtitle")}
               </Text>
             </View>
           </View>
@@ -103,11 +121,24 @@ export default function Home() {
             }}
           >
             <View>
-              <Text style={{ color: "white", fontWeight: "600", fontSize: 16 }}>
-                Continue Reading
+              <Text
+                style={{
+                  color: "white",
+                  fontWeight: "600",
+                  fontSize: 16,
+                  ...getTextStyle("subtitle", "semiBold"),
+                }}
+              >
+                {t("home.welcome.continueReading")}
               </Text>
-              <Text style={{ color: "#bbf7d0", fontSize: 14 }}>
-                Pick up where you left off
+              <Text
+                style={{
+                  color: isDark ? "#d1d5db" : "#bbf7d0",
+                  fontSize: 14,
+                  ...getTextStyle("body"),
+                }}
+              >
+                {t("home.welcome.pickUp")}
               </Text>
             </View>
             <Ionicons name="arrow-forward" size={20} color="white" />
@@ -118,13 +149,14 @@ export default function Home() {
         <View style={{ marginHorizontal: 16, marginTop: 24 }}>
           <Text
             style={{
-              color: "#1f2937",
+              color: colors.text,
               fontSize: 20,
               fontWeight: "bold",
               marginBottom: 16,
+              ...getTextStyle("title", "bold"),
             }}
           >
-            Quick Actions
+            {t("home.quickActions.title")}
           </Text>
 
           <View
@@ -175,11 +207,18 @@ export default function Home() {
                     fontWeight: "600",
                     fontSize: 16,
                     marginBottom: 4,
+                    ...getTextStyle("subtitle", "semiBold"),
                   }}
                 >
                   {action.title}
                 </Text>
-                <Text style={{ color: "rgba(255,255,255,0.8)", fontSize: 14 }}>
+                <Text
+                  style={{
+                    color: "rgba(255,255,255,0.8)",
+                    fontSize: 14,
+                    ...getTextStyle("caption"),
+                  }}
+                >
                   {action.subtitle}
                 </Text>
               </TouchableOpacity>
@@ -191,27 +230,28 @@ export default function Home() {
         <View style={{ marginHorizontal: 16, marginTop: 24 }}>
           <Text
             style={{
-              color: "#1f2937",
+              color: colors.text,
               fontSize: 20,
               fontWeight: "bold",
               marginBottom: 16,
+              ...getTextStyle("title", "bold"),
             }}
           >
-            Recent Activity
+            {t("home.recentActivity.title")}
           </Text>
 
           <View
             style={{
-              backgroundColor: "white",
+              backgroundColor: colors.surface,
               borderRadius: 16,
               padding: 16,
-              shadowColor: "#000",
+              shadowColor: isDark ? colors.text : "#000",
               shadowOffset: { width: 0, height: 1 },
               shadowOpacity: 0.05,
               shadowRadius: 2,
               elevation: 2,
               borderWidth: 1,
-              borderColor: "#f3f4f6",
+              borderColor: colors.border,
             }}
           >
             <View
@@ -225,31 +265,53 @@ export default function Home() {
                 style={{
                   width: 40,
                   height: 40,
-                  backgroundColor: "#f0fdf4",
+                  backgroundColor: isDark
+                    ? "rgba(16, 185, 129, 0.1)"
+                    : "#f0fdf4",
                   borderRadius: 20,
                   alignItems: "center",
                   justifyContent: "center",
                 }}
               >
-                <MaterialIcons name="history" size={20} color="#059669" />
+                <MaterialIcons
+                  name="history"
+                  size={20}
+                  color={colors.primary}
+                />
               </View>
               <View style={{ marginLeft: 12, flex: 1 }}>
-                <Text style={{ color: "#1f2937", fontWeight: "600" }}>
-                  Last Read
+                <Text
+                  style={{
+                    color: colors.text,
+                    fontWeight: "600",
+                    ...getTextStyle("subtitle", "semiBold"),
+                  }}
+                >
+                  {t("home.recentActivity.lastRead")}
                 </Text>
-                <Text style={{ color: "#6b7280", fontSize: 14 }}>
-                  Surah Al-Fatiha - Verse 7
+                <Text
+                  style={{
+                    color: colors.textSecondary,
+                    fontSize: 14,
+                    ...getTextStyle("caption"),
+                  }}
+                >
+                  {t("home.recentActivity.lastReadDetails")}
                 </Text>
               </View>
               <TouchableOpacity>
-                <Ionicons name="chevron-forward" size={16} color="#9ca3af" />
+                <Ionicons
+                  name="chevron-forward"
+                  size={16}
+                  color={colors.textSecondary}
+                />
               </TouchableOpacity>
             </View>
 
             <View
               style={{
                 height: 1,
-                backgroundColor: "#e5e7eb",
+                backgroundColor: colors.border,
                 marginVertical: 12,
               }}
             />
@@ -259,7 +321,9 @@ export default function Home() {
                 style={{
                   width: 40,
                   height: 40,
-                  backgroundColor: "#eff6ff",
+                  backgroundColor: isDark
+                    ? "rgba(59, 130, 246, 0.1)"
+                    : "#eff6ff",
                   borderRadius: 20,
                   alignItems: "center",
                   justifyContent: "center",
@@ -268,15 +332,31 @@ export default function Home() {
                 <Ionicons name="bookmark" size={20} color="#3b82f6" />
               </View>
               <View style={{ marginLeft: 12, flex: 1 }}>
-                <Text style={{ color: "#1f2937", fontWeight: "600" }}>
-                  Bookmarked
+                <Text
+                  style={{
+                    color: colors.text,
+                    fontWeight: "600",
+                    ...getTextStyle("subtitle", "semiBold"),
+                  }}
+                >
+                  {t("home.recentActivity.bookmarked")}
                 </Text>
-                <Text style={{ color: "#6b7280", fontSize: 14 }}>
-                  3 verses saved today
+                <Text
+                  style={{
+                    color: colors.textSecondary,
+                    fontSize: 14,
+                    ...getTextStyle("caption"),
+                  }}
+                >
+                  {t("home.recentActivity.bookmarkedDetails")}
                 </Text>
               </View>
               <TouchableOpacity>
-                <Ionicons name="chevron-forward" size={16} color="#9ca3af" />
+                <Ionicons
+                  name="chevron-forward"
+                  size={16}
+                  color={colors.textSecondary}
+                />
               </TouchableOpacity>
             </View>
           </View>
@@ -286,13 +366,14 @@ export default function Home() {
         <View style={{ marginHorizontal: 16, marginTop: 24 }}>
           <Text
             style={{
-              color: "#1f2937",
+              color: colors.text,
               fontSize: 20,
               fontWeight: "bold",
               marginBottom: 16,
+              ...getTextStyle("title", "bold"),
             }}
           >
-            Verse of the Day
+            {t("home.dailyVerse.title")}
           </Text>
 
           <View
@@ -300,7 +381,7 @@ export default function Home() {
               backgroundColor: "#8b5cf6",
               borderRadius: 16,
               padding: 24,
-              shadowColor: "#000",
+              shadowColor: isDark ? colors.text : "#000",
               shadowOffset: { width: 0, height: 4 },
               shadowOpacity: 0.15,
               shadowRadius: 8,
@@ -315,12 +396,20 @@ export default function Home() {
                   fontSize: 18,
                   lineHeight: 28,
                   fontWeight: "500",
+                  ...getTextStyle("body", "medium"),
                 }}
               >
-                "And whoever relies upon Allah - then He is sufficient for him."
+                {t("home.dailyVerse.verse")}
               </Text>
-              <Text style={{ color: "#c4b5fd", fontSize: 14, marginTop: 12 }}>
-                — Quran 65:3
+              <Text
+                style={{
+                  color: "#c4b5fd",
+                  fontSize: 14,
+                  marginTop: 12,
+                  ...getTextStyle("caption"),
+                }}
+              >
+                {t("home.dailyVerse.reference")}
               </Text>
             </View>
 
@@ -336,9 +425,14 @@ export default function Home() {
             >
               <Ionicons name="share-outline" size={18} color="white" />
               <Text
-                style={{ color: "white", fontWeight: "600", marginLeft: 8 }}
+                style={{
+                  color: "white",
+                  fontWeight: "600",
+                  marginLeft: 8,
+                  ...getTextStyle("body", "semiBold"),
+                }}
               >
-                Share Verse
+                {t("home.dailyVerse.shareVerse")}
               </Text>
             </TouchableOpacity>
           </View>

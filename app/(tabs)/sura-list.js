@@ -8,6 +8,9 @@ import {
 } from "react-native";
 import { useRouter } from "expo-router";
 import { Ionicons, MaterialIcons } from "@expo/vector-icons";
+import { useTheme } from "../../contexts/ThemeContext";
+import { useLanguage } from "../../contexts/LanguageContext";
+import { useFont } from "../../contexts/FontContext";
 
 // Sample sura data
 const suraList = [
@@ -85,6 +88,9 @@ const suraList = [
 
 export default function SuraScreen() {
   const router = useRouter();
+  const { colors, isDark } = useTheme();
+  const { t } = useLanguage();
+  const { getTextStyle } = useFont();
   const [searchQuery, setSearchQuery] = useState("");
   const [filteredSuras, setFilteredSuras] = useState(suraList);
 
@@ -105,16 +111,17 @@ export default function SuraScreen() {
   const renderSuraItem = ({ item }) => (
     <TouchableOpacity
       style={{
-        backgroundColor: "white",
+        backgroundColor: colors.surface,
         marginHorizontal: 16,
         marginBottom: 12,
         borderRadius: 16,
-        shadowColor: "#000",
+        shadowColor: isDark ? colors.text : "#000",
         shadowOffset: { width: 0, height: 2 },
         shadowOpacity: 0.08,
         shadowRadius: 3.84,
         elevation: 5,
         borderWidth: 1,
+        borderColor: colors.border,
         borderColor: "#f3f4f6",
       }}
       onPress={() => router.push(`/sura/${item.id}`)}
@@ -124,14 +131,21 @@ export default function SuraScreen() {
           style={{
             width: 48,
             height: 48,
-            backgroundColor: "#f0fdf4",
+            backgroundColor: isDark ? "rgba(16, 185, 129, 0.1)" : "#f0fdf4",
             borderRadius: 24,
             alignItems: "center",
             justifyContent: "center",
             marginRight: 16,
           }}
         >
-          <Text style={{ color: "#065f46", fontWeight: "bold", fontSize: 16 }}>
+          <Text
+            style={{
+              color: colors.primary,
+              fontWeight: "bold",
+              fontSize: 16,
+              ...getTextStyle("subtitle", "bold"),
+            }}
+          >
             {item.id}
           </Text>
         </View>
@@ -139,15 +153,23 @@ export default function SuraScreen() {
         <View style={{ flex: 1 }}>
           <Text
             style={{
-              color: "#1f2937",
+              color: colors.text,
               fontSize: 18,
               fontWeight: "bold",
               marginBottom: 4,
+              ...getTextStyle("title", "bold"),
             }}
           >
             {item.name}
           </Text>
-          <Text style={{ color: "#6b7280", fontSize: 14, marginBottom: 4 }}>
+          <Text
+            style={{
+              color: colors.textSecondary,
+              fontSize: 14,
+              marginBottom: 4,
+              ...getTextStyle("body"),
+            }}
+          >
             {item.englishName}
           </Text>
           <View style={{ flexDirection: "row", alignItems: "center" }}>
@@ -161,20 +183,34 @@ export default function SuraScreen() {
               <Ionicons
                 name="document-text-outline"
                 size={14}
-                color="#9ca3af"
+                color={colors.textSecondary}
               />
-              <Text style={{ color: "#9ca3af", fontSize: 12, marginLeft: 4 }}>
-                {item.verses} verses
+              <Text
+                style={{
+                  color: colors.textSecondary,
+                  fontSize: 12,
+                  marginLeft: 4,
+                  ...getTextStyle("caption"),
+                }}
+              >
+                {item.verses} {t("suraList.totalVerses")}
               </Text>
             </View>
             <View style={{ flexDirection: "row", alignItems: "center" }}>
               <MaterialIcons
                 name={item.revelation === "Meccan" ? "location-city" : "domain"}
                 size={14}
-                color="#9ca3af"
+                color={colors.textSecondary}
               />
-              <Text style={{ color: "#9ca3af", fontSize: 12, marginLeft: 4 }}>
-                {item.revelation}
+              <Text
+                style={{
+                  color: colors.textSecondary,
+                  fontSize: 12,
+                  marginLeft: 4,
+                  ...getTextStyle("caption"),
+                }}
+              >
+                {t(`suraList.revelation.${item.revelation.toLowerCase()}`)}
               </Text>
             </View>
           </View>
@@ -188,7 +224,11 @@ export default function SuraScreen() {
             justifyContent: "center",
           }}
         >
-          <Ionicons name="chevron-forward" size={20} color="#d1d5db" />
+          <Ionicons
+            name="chevron-forward"
+            size={20}
+            color={colors.textSecondary}
+          />
         </View>
       </View>
     </TouchableOpacity>
@@ -199,15 +239,15 @@ export default function SuraScreen() {
       {/* Search Bar */}
       <View
         style={{
-          backgroundColor: "white",
+          backgroundColor: colors.surface,
           borderRadius: 16,
-          shadowColor: "#000",
+          shadowColor: isDark ? colors.text : "#000",
           shadowOffset: { width: 0, height: 1 },
           shadowOpacity: 0.05,
           shadowRadius: 2,
           elevation: 2,
           borderWidth: 1,
-          borderColor: "#f3f4f6",
+          borderColor: colors.border,
           flexDirection: "row",
           alignItems: "center",
           paddingHorizontal: 16,
@@ -215,22 +255,27 @@ export default function SuraScreen() {
           marginBottom: 16,
         }}
       >
-        <Ionicons name="search" size={20} color="#9ca3af" />
+        <Ionicons name="search" size={20} color={colors.textSecondary} />
         <TextInput
           style={{
             flex: 1,
             marginLeft: 12,
-            color: "#374151",
+            color: colors.text,
             fontSize: 16,
+            ...getTextStyle("body"),
           }}
-          placeholder="Search suras..."
-          placeholderTextColor="#9ca3af"
+          placeholder={t("suraList.searchPlaceholder")}
+          placeholderTextColor={colors.textSecondary}
           value={searchQuery}
           onChangeText={handleSearch}
         />
         {searchQuery.length > 0 && (
           <TouchableOpacity onPress={() => handleSearch("")}>
-            <Ionicons name="close-circle" size={20} color="#9ca3af" />
+            <Ionicons
+              name="close-circle"
+              size={20}
+              color={colors.textSecondary}
+            />
           </TouchableOpacity>
         )}
       </View>
@@ -324,7 +369,7 @@ export default function SuraScreen() {
   );
 
   return (
-    <View style={{ flex: 1, backgroundColor: "#f9fafb" }}>
+    <View style={{ flex: 1, backgroundColor: colors.background }}>
       <FlatList
         data={filteredSuras}
         renderItem={renderSuraItem}

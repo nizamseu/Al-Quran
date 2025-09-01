@@ -10,27 +10,37 @@ import {
 } from "react-native";
 import { DrawerContentScrollView, DrawerItem } from "@react-navigation/drawer";
 import { router } from "expo-router";
+import { LanguageProvider } from "../contexts/LanguageContext";
+import { ThemeProvider } from "../contexts/ThemeContext";
+import { FontProvider } from "../contexts/FontContext";
+import { useTheme } from "../contexts/ThemeContext";
+import { useLanguage } from "../contexts/LanguageContext";
+import { useFont } from "../contexts/FontContext";
 
 const { width } = Dimensions.get("window");
 
 // Custom beautiful drawer content
 function CustomDrawerContent(props) {
+  const { colors, isDark } = useTheme();
+  const { t } = useLanguage();
+  const { getTextStyle } = useFont();
+
   const routes = [
     {
       name: "index",
-      label: "Home",
+      label: t("navigation.home"),
       icon: "home",
       iconType: "Ionicons",
     },
     {
       name: "sura-list",
-      label: "Sura List",
+      label: t("navigation.suraList"),
       icon: "list",
       iconType: "MaterialIcons",
     },
     {
       name: "settings",
-      label: "Settings",
+      label: t("navigation.settings"),
       icon: "settings",
       iconType: "Ionicons",
     },
@@ -41,10 +51,10 @@ function CustomDrawerContent(props) {
       {/* Beautiful Header */}
       <View
         style={{
-          backgroundColor: "#059669",
+          backgroundColor: colors.primary,
           paddingHorizontal: 24,
           paddingVertical: 48,
-          shadowColor: "#000",
+          shadowColor: isDark ? colors.text : "#000",
           shadowOffset: { width: 0, height: 4 },
           shadowOpacity: 0.3,
           shadowRadius: 8,
@@ -75,26 +85,30 @@ function CustomDrawerContent(props) {
           {/* App Name */}
           <Text
             style={{
+              ...getTextStyle("display", "bold"),
               color: "white",
-              fontSize: 24,
-              fontWeight: "bold",
               marginBottom: 4,
             }}
           >
-            Al-Quran
+            {t("app.name")}
           </Text>
           <Text
             style={{
+              ...getTextStyle("subtitle", "medium"),
               color: "#bbf7d0",
-              fontSize: 16,
-              fontWeight: "500",
               marginBottom: 8,
             }}
           >
-            القرآن الكريم
+            {t("app.nameArabic")}
           </Text>
-          <Text style={{ color: "#86efac", fontSize: 14, opacity: 0.9 }}>
-            Holy Quran App
+          <Text
+            style={{
+              ...getTextStyle("body"),
+              color: "#86efac",
+              opacity: 0.9,
+            }}
+          >
+            {t("app.subtitle")}
           </Text>
 
           {/* Decorative line */}
@@ -112,7 +126,7 @@ function CustomDrawerContent(props) {
 
       {/* Navigation Items */}
       <ScrollView
-        style={{ flex: 1, backgroundColor: "#f9fafb" }}
+        style={{ flex: 1, backgroundColor: colors.background }}
         contentContainerStyle={{ paddingTop: 20 }}
         showsVerticalScrollIndicator={false}
       >
@@ -132,10 +146,12 @@ function CustomDrawerContent(props) {
                 alignItems: "center",
                 paddingHorizontal: 16,
                 paddingVertical: 16,
-                backgroundColor: isActive ? "#f0fdf4" : "transparent",
+                backgroundColor: isActive
+                  ? colors.primaryLight + "20"
+                  : "transparent",
                 borderLeftWidth: isActive ? 4 : 0,
-                borderLeftColor: "#059669",
-                shadowColor: isActive ? "#059669" : "transparent",
+                borderLeftColor: colors.primary,
+                shadowColor: isActive ? colors.primary : "transparent",
                 shadowOffset: { width: 0, height: 2 },
                 shadowOpacity: 0.1,
                 shadowRadius: 4,
@@ -149,30 +165,29 @@ function CustomDrawerContent(props) {
                   borderRadius: 20,
                   alignItems: "center",
                   justifyContent: "center",
-                  backgroundColor: isActive ? "#059669" : "#d1d5db",
+                  backgroundColor: isActive ? colors.primary : colors.border,
                 }}
               >
                 {route.iconType === "Ionicons" ? (
                   <Ionicons
                     name={route.icon}
                     size={20}
-                    color={isActive ? "white" : "#6b7280"}
+                    color={isActive ? "white" : colors.textSecondary}
                   />
                 ) : (
                   <MaterialIcons
                     name={route.icon}
                     size={20}
-                    color={isActive ? "white" : "#6b7280"}
+                    color={isActive ? "white" : colors.textSecondary}
                   />
                 )}
               </View>
 
               <Text
                 style={{
+                  ...getTextStyle("subtitle", "medium"),
                   marginLeft: 16,
-                  fontSize: 16,
-                  fontWeight: "500",
-                  color: isActive ? "#065f46" : "#374151",
+                  color: isActive ? colors.primaryDark : colors.text,
                 }}
               >
                 {route.label}
@@ -180,7 +195,11 @@ function CustomDrawerContent(props) {
 
               {isActive && (
                 <View style={{ marginLeft: "auto" }}>
-                  <Ionicons name="chevron-forward" size={16} color="#059669" />
+                  <Ionicons
+                    name="chevron-forward"
+                    size={16}
+                    color={colors.primary}
+                  />
                 </View>
               )}
             </TouchableOpacity>
@@ -194,12 +213,12 @@ function CustomDrawerContent(props) {
             marginHorizontal: 16,
             paddingTop: 24,
             borderTopWidth: 1,
-            borderTopColor: "#e5e7eb",
+            borderTopColor: colors.border,
           }}
         >
           <View
             style={{
-              backgroundColor: "#f0fdf4",
+              backgroundColor: colors.primaryLight + "20",
               borderRadius: 12,
               padding: 16,
               marginBottom: 16,
@@ -212,21 +231,40 @@ function CustomDrawerContent(props) {
                 marginBottom: 8,
               }}
             >
-              <Ionicons name="information-circle" size={20} color="#059669" />
+              <Ionicons
+                name="information-circle"
+                size={20}
+                color={colors.primary}
+              />
               <Text
-                style={{ marginLeft: 8, color: "#065f46", fontWeight: "600" }}
+                style={{
+                  ...getTextStyle("subtitle", "semiBold"),
+                  marginLeft: 8,
+                  color: colors.primaryDark,
+                }}
               >
-                About
+                {t("drawer.about")}
               </Text>
             </View>
-            <Text style={{ color: "#4b5563", fontSize: 14, lineHeight: 20 }}>
-              Experience the divine words of Allah with beautiful recitation and
-              translation.
+            <Text
+              style={{
+                ...getTextStyle("body"),
+                color: colors.textSecondary,
+                lineHeight: 20,
+              }}
+            >
+              {t("drawer.aboutText")}
             </Text>
           </View>
 
-          <Text style={{ textAlign: "center", color: "#9ca3af", fontSize: 12 }}>
-            Version 1.0.0
+          <Text
+            style={{
+              ...getTextStyle("caption"),
+              textAlign: "center",
+              color: colors.textTertiary,
+            }}
+          >
+            {t("app.version")}
           </Text>
         </View>
       </ScrollView>
@@ -236,20 +274,23 @@ function CustomDrawerContent(props) {
 
 // Tab Layout Component
 function TabLayout() {
+  const { colors, isDark } = useTheme();
+  const { t } = useLanguage();
+
   return (
     <Tabs
       screenOptions={{
-        tabBarActiveTintColor: "#059669",
-        tabBarInactiveTintColor: "#9ca3af",
+        tabBarActiveTintColor: colors.primary,
+        tabBarInactiveTintColor: colors.textTertiary,
         tabBarStyle: {
-          backgroundColor: "white",
+          backgroundColor: colors.surface,
           borderTopWidth: 1,
-          borderTopColor: "#e5e7eb",
+          borderTopColor: colors.border,
           height: 80,
           paddingBottom: 10,
           paddingTop: 10,
           elevation: 8,
-          shadowColor: "#000",
+          shadowColor: isDark ? colors.text : "#000",
           shadowOffset: { width: 0, height: -2 },
           shadowOpacity: 0.1,
           shadowRadius: 4,
@@ -265,7 +306,7 @@ function TabLayout() {
       <Tabs.Screen
         name="index"
         options={{
-          title: "Home",
+          title: t("navigation.home"),
           tabBarIcon: ({ color, focused }) => (
             <View
               style={{
@@ -274,7 +315,9 @@ function TabLayout() {
                 width: 48,
                 height: 48,
                 borderRadius: 24,
-                backgroundColor: focused ? "#f0fdf4" : "transparent",
+                backgroundColor: focused
+                  ? colors.primaryLight + "20"
+                  : "transparent",
               }}
             >
               <Ionicons
@@ -290,7 +333,7 @@ function TabLayout() {
       <Tabs.Screen
         name="sura-list"
         options={{
-          title: "Suras",
+          title: t("navigation.suras"),
           tabBarIcon: ({ color, focused }) => (
             <View
               style={{
@@ -299,7 +342,9 @@ function TabLayout() {
                 width: 48,
                 height: 48,
                 borderRadius: 24,
-                backgroundColor: focused ? "#f0fdf4" : "transparent",
+                backgroundColor: focused
+                  ? colors.primaryLight + "20"
+                  : "transparent",
               }}
             >
               <MaterialIcons
@@ -315,7 +360,7 @@ function TabLayout() {
       <Tabs.Screen
         name="settings"
         options={{
-          title: "Settings",
+          title: t("navigation.settings"),
           tabBarIcon: ({ color, focused }) => (
             <View
               style={{
@@ -324,7 +369,9 @@ function TabLayout() {
                 width: 48,
                 height: 48,
                 borderRadius: 24,
-                backgroundColor: focused ? "#f0fdf4" : "transparent",
+                backgroundColor: focused
+                  ? colors.primaryLight + "20"
+                  : "transparent",
               }}
             >
               <Ionicons
@@ -347,7 +394,25 @@ function TabLayout() {
   );
 }
 
-export default function Layout() {
+// Layout component with all providers
+function LayoutWithProviders() {
+  return (
+    <LanguageProvider>
+      <ThemeProvider>
+        <FontProvider>
+          <Layout />
+        </FontProvider>
+      </ThemeProvider>
+    </LanguageProvider>
+  );
+}
+
+// Main layout component
+function Layout() {
+  const { colors, isDark } = useTheme();
+  const { t } = useLanguage();
+  const { getTextStyle } = useFont();
+
   return (
     <Drawer
       drawerContent={(props) => <CustomDrawerContent {...props} />}
@@ -357,28 +422,28 @@ export default function Layout() {
           backgroundColor: "transparent",
         },
         headerStyle: {
-          backgroundColor: "#059669",
+          backgroundColor: colors.primary,
           elevation: 4,
-          shadowColor: "#000",
+          shadowColor: isDark ? colors.text : "#000",
           shadowOffset: { width: 0, height: 2 },
           shadowOpacity: 0.25,
           shadowRadius: 3.84,
         },
         headerTintColor: "white",
         headerTitleStyle: {
-          fontWeight: "bold",
-          fontSize: 18,
+          ...getTextStyle("title", "bold"),
+          color: "white",
         },
         headerTitleAlign: "center",
         drawerType: "slide",
-        overlayColor: "rgba(0,0,0,0.4)",
+        overlayColor: isDark ? "rgba(255,255,255,0.1)" : "rgba(0,0,0,0.4)",
       }}
     >
       <Drawer.Screen
         name="(tabs)"
         options={{
-          title: "Al-Quran",
-          drawerLabel: "Home",
+          title: t("app.name"),
+          drawerLabel: t("navigation.home"),
           headerShown: false,
         }}
       />
@@ -386,7 +451,7 @@ export default function Layout() {
         name="sura/[id]"
         options={{
           drawerItemStyle: { display: "none" },
-          title: "Sura Details",
+          title: t("sura.details"),
           headerRight: ({ tintColor }) => (
             <View style={{ flexDirection: "row", marginRight: 16 }}>
               <TouchableOpacity style={{ marginRight: 12 }}>
@@ -402,3 +467,5 @@ export default function Layout() {
     </Drawer>
   );
 }
+
+export default LayoutWithProviders;

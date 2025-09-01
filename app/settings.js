@@ -1,20 +1,95 @@
 import React, { useState } from "react";
-import { View, Text, TouchableOpacity, ScrollView, Switch } from "react-native";
+import {
+  View,
+  Text,
+  TouchableOpacity,
+  ScrollView,
+  Switch,
+  Modal,
+  FlatList,
+} from "react-native";
 import { Ionicons, MaterialIcons } from "@expo/vector-icons";
-import CustomTabBar from "../components/CustomTabBar";
+import { useTheme } from "../contexts/ThemeContext";
+import { useLanguage } from "../contexts/LanguageContext";
+import { useFont } from "../contexts/FontContext";
 
 export default function Settings() {
-  const [darkMode, setDarkMode] = useState(false);
+  const { colors, themeMode, changeTheme, isDark } = useTheme();
+  const { currentLanguage, changeLanguage, t } = useLanguage();
+  const {
+    fontFamily,
+    fontSize,
+    changeFontFamily,
+    changeFontSize,
+    fontFamilies,
+    fontSizes,
+    getTextStyle,
+  } = useFont();
+
   const [arabicText, setArabicText] = useState(true);
   const [translation, setTranslation] = useState(true);
   const [notifications, setNotifications] = useState(true);
+  const [showLanguageModal, setShowLanguageModal] = useState(false);
+  const [showThemeModal, setShowThemeModal] = useState(false);
+  const [showFontFamilyModal, setShowFontFamilyModal] = useState(false);
+  const [showFontSizeModal, setShowFontSizeModal] = useState(false);
+
+  const getThemeDisplayName = (mode) => {
+    switch (mode) {
+      case "light":
+        return t("settings.theme.light");
+      case "dark":
+        return t("settings.theme.dark");
+      case "system":
+        return t("settings.theme.system");
+      default:
+        return t("settings.theme.system");
+    }
+  };
 
   const settingsSections = [
     {
-      title: "Reading Preferences",
+      title: t("settings.sections.appearance"),
       items: [
         {
-          label: "Arabic Text",
+          label: t("settings.language.title"),
+          icon: "language",
+          iconType: "Ionicons",
+          type: "navigation",
+          value: currentLanguage === "bn" ? "বাংলা" : "English",
+          onPress: () => setShowLanguageModal(true),
+        },
+        {
+          label: t("settings.theme.title"),
+          icon: isDark ? "moon" : "sunny",
+          iconType: "Ionicons",
+          type: "navigation",
+          value: getThemeDisplayName(themeMode),
+          onPress: () => setShowThemeModal(true),
+        },
+        {
+          label: t("settings.font.family"),
+          icon: "text",
+          iconType: "Ionicons",
+          type: "navigation",
+          value: fontFamilies[fontFamily]?.name || "System Default",
+          onPress: () => setShowFontFamilyModal(true),
+        },
+        {
+          label: t("settings.font.size"),
+          icon: "text-outline",
+          iconType: "Ionicons",
+          type: "navigation",
+          value: fontSizes[fontSize]?.name || "Medium",
+          onPress: () => setShowFontSizeModal(true),
+        },
+      ],
+    },
+    {
+      title: t("settings.sections.reading"),
+      items: [
+        {
+          label: t("settings.reading.arabicText"),
           icon: "language",
           iconType: "MaterialIcons",
           type: "switch",
@@ -22,48 +97,34 @@ export default function Settings() {
           onToggle: setArabicText,
         },
         {
-          label: "Show Translation",
+          label: t("settings.reading.showTranslation"),
           icon: "translate",
           iconType: "MaterialIcons",
           type: "switch",
           value: translation,
           onToggle: setTranslation,
         },
-        {
-          label: "Font Size",
-          icon: "text-format",
-          iconType: "MaterialIcons",
-          type: "navigation",
-          value: "Medium",
-        },
-        {
-          label: "Text Color",
-          icon: "color-palette",
-          iconType: "Ionicons",
-          type: "navigation",
-          value: "Default",
-        },
       ],
     },
     {
-      title: "Audio & Recitation",
+      title: t("settings.sections.audio"),
       items: [
         {
-          label: "Default Reciter",
+          label: t("settings.audio.defaultReciter"),
           icon: "volume-high",
           iconType: "Ionicons",
           type: "navigation",
           value: "Al-Afasy",
         },
         {
-          label: "Audio Quality",
+          label: t("settings.audio.quality"),
           icon: "musical-notes",
           iconType: "Ionicons",
           type: "navigation",
-          value: "High",
+          value: t("settings.audio.high"),
         },
         {
-          label: "Auto-play Next",
+          label: t("settings.audio.autoplay"),
           icon: "play-forward",
           iconType: "Ionicons",
           type: "switch",
@@ -73,57 +134,42 @@ export default function Settings() {
       ],
     },
     {
-      title: "App Preferences",
+      title: t("settings.sections.notifications"),
       items: [
         {
-          label: "Dark Mode",
-          icon: "moon",
-          iconType: "Ionicons",
-          type: "switch",
-          value: darkMode,
-          onToggle: setDarkMode,
-        },
-        {
-          label: "Notifications",
+          label: t("settings.notifications.enable"),
           icon: "notifications",
           iconType: "Ionicons",
           type: "switch",
           value: notifications,
           onToggle: setNotifications,
         },
-        {
-          label: "Language",
-          icon: "language",
-          iconType: "Ionicons",
-          type: "navigation",
-          value: "English",
-        },
       ],
     },
     {
-      title: "About",
+      title: t("settings.sections.about"),
       items: [
         {
-          label: "App Version",
+          label: t("settings.about.version"),
           icon: "information-circle",
           iconType: "Ionicons",
           type: "info",
           value: "1.0.0",
         },
         {
-          label: "Privacy Policy",
+          label: t("settings.about.privacy"),
           icon: "shield-checkmark",
           iconType: "Ionicons",
           type: "navigation",
         },
         {
-          label: "Terms of Service",
+          label: t("settings.about.terms"),
           icon: "document-text",
           iconType: "Ionicons",
           type: "navigation",
         },
         {
-          label: "Rate This App",
+          label: t("settings.about.rate"),
           icon: "star",
           iconType: "Ionicons",
           type: "navigation",
@@ -136,82 +182,275 @@ export default function Settings() {
     return (
       <View key={index}>
         <TouchableOpacity
-          className={`flex-row items-center justify-between py-4 px-4 ${
-            item.type === "info" ? "opacity-60" : ""
-          }`}
+          style={{
+            flexDirection: "row",
+            alignItems: "center",
+            justifyContent: "space-between",
+            paddingVertical: 16,
+            paddingHorizontal: 16,
+            opacity: item.type === "info" ? 0.6 : 1,
+          }}
           disabled={item.type === "info"}
+          onPress={item.onPress}
         >
-          <View className="flex-row items-center flex-1">
-            <View className="w-10 h-10 bg-gray-100 rounded-full items-center justify-center mr-4">
+          <View style={{ flexDirection: "row", alignItems: "center", flex: 1 }}>
+            <View
+              style={{
+                width: 40,
+                height: 40,
+                backgroundColor: colors.primaryLight + "20",
+                borderRadius: 20,
+                alignItems: "center",
+                justifyContent: "center",
+                marginRight: 16,
+              }}
+            >
               {item.iconType === "Ionicons" ? (
-                <Ionicons name={item.icon} size={20} color="#059669" />
+                <Ionicons name={item.icon} size={20} color={colors.primary} />
               ) : (
-                <MaterialIcons name={item.icon} size={20} color="#059669" />
+                <MaterialIcons
+                  name={item.icon}
+                  size={20}
+                  color={colors.primary}
+                />
               )}
             </View>
 
-            <View className="flex-1">
-              <Text className="text-gray-800 text-base font-medium">
+            <View style={{ flex: 1 }}>
+              <Text
+                style={{
+                  ...getTextStyle("subtitle", "medium"),
+                  color: colors.text,
+                }}
+              >
                 {item.label}
               </Text>
               {item.value && item.type !== "switch" && (
-                <Text className="text-gray-500 text-sm mt-1">{item.value}</Text>
+                <Text
+                  style={{
+                    ...getTextStyle("body"),
+                    color: colors.textSecondary,
+                    marginTop: 4,
+                  }}
+                >
+                  {item.value}
+                </Text>
               )}
             </View>
           </View>
 
-          <View className="ml-4">
+          <View style={{ marginLeft: 16 }}>
             {item.type === "switch" ? (
               <Switch
                 value={item.value}
                 onValueChange={item.onToggle}
-                trackColor={{ false: "#e5e7eb", true: "#86efac" }}
-                thumbColor={item.value ? "#059669" : "#f3f4f6"}
-                ios_backgroundColor="#e5e7eb"
+                trackColor={{
+                  false: colors.border,
+                  true: colors.primaryLight + "80",
+                }}
+                thumbColor={item.value ? colors.primary : colors.textTertiary}
+                ios_backgroundColor={colors.border}
               />
             ) : item.type === "navigation" ? (
-              <Ionicons name="chevron-forward" size={20} color="#d1d5db" />
+              <Ionicons
+                name="chevron-forward"
+                size={20}
+                color={colors.textTertiary}
+              />
             ) : null}
           </View>
         </TouchableOpacity>
 
         {index <
           settingsSections.find((s) => s.items.includes(item))?.items.length -
-            1 && <View className="h-px bg-gray-200 ml-14" />}
+            1 && (
+          <View
+            style={{
+              height: 1,
+              backgroundColor: colors.border,
+              marginLeft: 56,
+            }}
+          />
+        )}
       </View>
     );
   };
 
+  const renderModal = (
+    visible,
+    setVisible,
+    title,
+    options,
+    currentValue,
+    onSelect
+  ) => (
+    <Modal
+      visible={visible}
+      transparent={true}
+      animationType="slide"
+      onRequestClose={() => setVisible(false)}
+    >
+      <View
+        style={{
+          flex: 1,
+          backgroundColor: "rgba(0,0,0,0.5)",
+          justifyContent: "flex-end",
+        }}
+      >
+        <View
+          style={{
+            backgroundColor: colors.surface,
+            borderTopLeftRadius: 20,
+            borderTopRightRadius: 20,
+            paddingTop: 20,
+            maxHeight: "80%",
+          }}
+        >
+          <View
+            style={{
+              flexDirection: "row",
+              alignItems: "center",
+              justifyContent: "space-between",
+              paddingHorizontal: 20,
+              paddingBottom: 20,
+              borderBottomWidth: 1,
+              borderBottomColor: colors.border,
+            }}
+          >
+            <Text
+              style={{
+                ...getTextStyle("title", "bold"),
+                color: colors.text,
+              }}
+            >
+              {title}
+            </Text>
+            <TouchableOpacity onPress={() => setVisible(false)}>
+              <Ionicons name="close" size={24} color={colors.textSecondary} />
+            </TouchableOpacity>
+          </View>
+
+          <FlatList
+            data={options}
+            keyExtractor={(item) => item.value}
+            renderItem={({ item }) => (
+              <TouchableOpacity
+                style={{
+                  flexDirection: "row",
+                  alignItems: "center",
+                  justifyContent: "space-between",
+                  paddingVertical: 16,
+                  paddingHorizontal: 20,
+                  backgroundColor:
+                    item.value === currentValue
+                      ? colors.primaryLight + "20"
+                      : "transparent",
+                }}
+                onPress={() => {
+                  onSelect(item.value);
+                  setVisible(false);
+                }}
+              >
+                <Text
+                  style={{
+                    ...getTextStyle("subtitle", "medium"),
+                    color:
+                      item.value === currentValue
+                        ? colors.primary
+                        : colors.text,
+                  }}
+                >
+                  {item.label}
+                </Text>
+                {item.value === currentValue && (
+                  <Ionicons name="checkmark" size={20} color={colors.primary} />
+                )}
+              </TouchableOpacity>
+            )}
+          />
+        </View>
+      </View>
+    </Modal>
+  );
+
   return (
-    <View className="flex-1 bg-gray-50">
+    <View style={{ flex: 1, backgroundColor: colors.background }}>
       <ScrollView
-        className="flex-1"
+        style={{ flex: 1 }}
         contentContainerStyle={{ paddingBottom: 100 }}
         showsVerticalScrollIndicator={false}
       >
         {/* Profile Section */}
-        <View className="bg-gradient-to-br from-green-600 to-emerald-700 mx-4 mt-6 rounded-2xl p-6 shadow-lg">
-          <View className="items-center">
-            <View className="w-20 h-20 bg-white/20 rounded-full items-center justify-center mb-4">
+        <View
+          style={{
+            backgroundColor: colors.primary,
+            marginHorizontal: 16,
+            marginTop: 24,
+            borderRadius: 16,
+            padding: 24,
+            ...colors.shadows?.medium,
+          }}
+        >
+          <View style={{ alignItems: "center" }}>
+            <View
+              style={{
+                width: 80,
+                height: 80,
+                backgroundColor: "rgba(255,255,255,0.2)",
+                borderRadius: 40,
+                alignItems: "center",
+                justifyContent: "center",
+                marginBottom: 16,
+              }}
+            >
               <MaterialIcons name="person" size={40} color="white" />
             </View>
-            <Text className="text-white text-xl font-bold mb-2">
-              Welcome, User
+            <Text
+              style={{
+                ...getTextStyle("display", "bold"),
+                color: "white",
+                marginBottom: 8,
+              }}
+            >
+              {t("settings.profile.welcome")}
             </Text>
-            <Text className="text-green-100 text-sm">
-              Reading progress: 12 Suras completed
+            <Text
+              style={{
+                ...getTextStyle("body"),
+                color: "#bbf7d0",
+              }}
+            >
+              {t("settings.profile.progress")}
             </Text>
           </View>
         </View>
 
         {/* Settings Sections */}
         {settingsSections.map((section, sectionIndex) => (
-          <View key={sectionIndex} className="mx-4 mt-6">
-            <Text className="text-gray-800 text-lg font-bold mb-3 ml-1">
+          <View
+            key={sectionIndex}
+            style={{ marginHorizontal: 16, marginTop: 24 }}
+          >
+            <Text
+              style={{
+                ...getTextStyle("title", "bold"),
+                color: colors.text,
+                marginBottom: 12,
+                marginLeft: 4,
+              }}
+            >
               {section.title}
             </Text>
 
-            <View className="bg-white rounded-2xl shadow-sm border border-gray-100">
+            <View
+              style={{
+                backgroundColor: colors.surface,
+                borderRadius: 16,
+                borderWidth: 1,
+                borderColor: colors.border,
+                ...colors.shadows?.small,
+              }}
+            >
               {section.items.map((item, itemIndex) =>
                 renderSettingItem(item, itemIndex)
               )}
@@ -220,24 +459,95 @@ export default function Settings() {
         ))}
 
         {/* Footer */}
-        <View className="mx-4 mt-8 mb-4">
-          <View className="bg-green-50 rounded-2xl p-6 border border-green-100">
-            <View className="items-center">
-              <MaterialIcons name="book" size={32} color="#059669" />
-              <Text className="text-green-800 text-lg font-bold mt-3 mb-2">
-                Al-Quran App
+        <View style={{ marginHorizontal: 16, marginTop: 32, marginBottom: 16 }}>
+          <View
+            style={{
+              backgroundColor: colors.primaryLight + "20",
+              borderRadius: 16,
+              padding: 24,
+              borderWidth: 1,
+              borderColor: colors.primaryLight + "40",
+            }}
+          >
+            <View style={{ alignItems: "center" }}>
+              <MaterialIcons name="book" size={32} color={colors.primary} />
+              <Text
+                style={{
+                  ...getTextStyle("title", "bold"),
+                  color: colors.primaryDark,
+                  marginTop: 12,
+                  marginBottom: 8,
+                }}
+              >
+                {t("app.name")}
               </Text>
-              <Text className="text-green-600 text-sm text-center leading-5">
-                Experience the divine words of Allah with beautiful recitation,
-                translation, and spiritual guidance.
+              <Text
+                style={{
+                  ...getTextStyle("body"),
+                  color: colors.textSecondary,
+                  textAlign: "center",
+                  lineHeight: 20,
+                }}
+              >
+                {t("settings.footer.description")}
               </Text>
             </View>
           </View>
         </View>
       </ScrollView>
 
-      {/* Custom Tab Bar */}
-      <CustomTabBar />
+      {/* Language Modal */}
+      {renderModal(
+        showLanguageModal,
+        setShowLanguageModal,
+        t("settings.language.title"),
+        [
+          { value: "bn", label: "বাংলা" },
+          { value: "en", label: "English" },
+        ],
+        currentLanguage,
+        changeLanguage
+      )}
+
+      {/* Theme Modal */}
+      {renderModal(
+        showThemeModal,
+        setShowThemeModal,
+        t("settings.theme.title"),
+        [
+          { value: "light", label: t("settings.theme.light") },
+          { value: "dark", label: t("settings.theme.dark") },
+          { value: "system", label: t("settings.theme.system") },
+        ],
+        themeMode,
+        changeTheme
+      )}
+
+      {/* Font Family Modal */}
+      {renderModal(
+        showFontFamilyModal,
+        setShowFontFamilyModal,
+        t("settings.font.family"),
+        Object.keys(fontFamilies).map((key) => ({
+          value: key,
+          label: fontFamilies[key].name,
+        })),
+        fontFamily,
+        changeFontFamily
+      )}
+
+      {/* Font Size Modal */}
+      {renderModal(
+        showFontSizeModal,
+        setShowFontSizeModal,
+        t("settings.font.size"),
+        Object.keys(fontSizes).map((key) => ({
+          value: key,
+          label: fontSizes[key].name,
+        })),
+        fontSize,
+        changeFontSize
+      )}
     </View>
   );
 }

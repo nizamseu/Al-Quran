@@ -1,78 +1,134 @@
 import { View, Text, ScrollView, TouchableOpacity } from "react-native";
 import { Ionicons, MaterialIcons } from "@expo/vector-icons";
 import { router } from "expo-router";
-import CustomTabBar from "../components/CustomTabBar";
+import { useTheme } from "../contexts/ThemeContext";
+import { useLanguage } from "../contexts/LanguageContext";
+import { useFont } from "../contexts/FontContext";
 
 export default function Home() {
+  const { colors, isDark } = useTheme();
+  const { t } = useLanguage();
+  const { getTextStyle } = useFont();
   const quickActions = [
     {
-      title: "Start Reading",
-      subtitle: "Continue your journey",
+      title: t("home.quickActions.startReading"),
+      subtitle: t("home.quickActions.continueJourney"),
       icon: "book",
       iconType: "Ionicons",
-      color: "bg-blue-500",
+      color: colors.info,
       action: () => router.push("/sura-list"),
     },
     {
-      title: "Bookmarks",
-      subtitle: "Saved verses",
+      title: t("home.quickActions.bookmarks"),
+      subtitle: t("home.quickActions.savedVerses"),
       icon: "bookmark",
       iconType: "Ionicons",
-      color: "bg-purple-500",
+      color: colors.secondary,
       action: () => {},
     },
     {
-      title: "Prayer Times",
-      subtitle: "Today's schedule",
+      title: t("home.quickActions.prayerTimes"),
+      subtitle: t("home.quickActions.todaySchedule"),
       icon: "time",
       iconType: "Ionicons",
-      color: "bg-orange-500",
+      color: colors.warning,
       action: () => {},
     },
     {
-      title: "Duas",
-      subtitle: "Daily supplications",
+      title: t("home.quickActions.duas"),
+      subtitle: t("home.quickActions.dailySupplications"),
       icon: "emoji-people",
       iconType: "MaterialIcons",
-      color: "bg-teal-500",
+      color: colors.success,
       action: () => {},
     },
   ];
 
   return (
-    <View className="flex-1 bg-gray-50">
+    <View style={{ flex: 1, backgroundColor: colors.background }}>
       {/* Main Content */}
       <ScrollView
-        className="flex-1"
+        style={{ flex: 1 }}
         contentContainerStyle={{ paddingBottom: 100 }}
         showsVerticalScrollIndicator={false}
       >
         {/* Welcome Section */}
-        <View className="bg-gradient-to-br from-green-600 to-emerald-700 mx-4 mt-6 rounded-2xl p-6 shadow-lg">
-          <View className="flex-row items-center mb-4">
-            <View className="w-12 h-12 bg-white/20 rounded-full items-center justify-center">
+        <View
+          style={{
+            backgroundColor: colors.primary,
+            marginHorizontal: 16,
+            marginTop: 24,
+            borderRadius: 16,
+            padding: 24,
+            ...colors.shadows?.large,
+          }}
+        >
+          <View
+            style={{
+              flexDirection: "row",
+              alignItems: "center",
+              marginBottom: 16,
+            }}
+          >
+            <View
+              style={{
+                width: 48,
+                height: 48,
+                backgroundColor: "rgba(255,255,255,0.2)",
+                borderRadius: 24,
+                alignItems: "center",
+                justifyContent: "center",
+              }}
+            >
               <MaterialIcons name="book" size={24} color="white" />
             </View>
-            <View className="ml-4 flex-1">
-              <Text className="text-white text-lg font-bold">
-                Welcome to Al-Quran
+            <View style={{ marginLeft: 16, flex: 1 }}>
+              <Text
+                style={{
+                  ...getTextStyle("title", "bold"),
+                  color: "white",
+                }}
+              >
+                {t("home.welcome.title")}
               </Text>
-              <Text className="text-green-100 text-sm">
-                Read, Reflect, Remember
+              <Text
+                style={{
+                  ...getTextStyle("body"),
+                  color: "#bbf7d0",
+                }}
+              >
+                {t("home.welcome.subtitle")}
               </Text>
             </View>
           </View>
 
           <TouchableOpacity
             onPress={() => router.push("/sura-list")}
-            className="bg-white/20 backdrop-blur-sm rounded-xl p-4 flex-row items-center justify-between"
+            style={{
+              backgroundColor: "rgba(255,255,255,0.2)",
+              borderRadius: 12,
+              padding: 16,
+              flexDirection: "row",
+              alignItems: "center",
+              justifyContent: "space-between",
+            }}
           >
             <View>
-              <Text className="text-white font-semibold text-base">
-                Continue Reading
+              <Text
+                style={{
+                  ...getTextStyle("subtitle", "semiBold"),
+                  color: "white",
+                }}
+              >
+                {t("home.welcome.continueReading")}
               </Text>
-              <Text className="text-green-100 text-sm">
-                Pick up where you left off
+              <Text
+                style={{
+                  ...getTextStyle("body"),
+                  color: "#bbf7d0",
+                }}
+              >
+                {t("home.welcome.pickUp")}
               </Text>
             </View>
             <Ionicons name="arrow-forward" size={20} color="white" />
@@ -80,26 +136,48 @@ export default function Home() {
         </View>
 
         {/* Quick Actions Grid */}
-        <View className="mx-4 mt-6">
-          <Text className="text-gray-800 text-xl font-bold mb-4">
-            Quick Actions
+        <View style={{ marginHorizontal: 16, marginTop: 24 }}>
+          <Text
+            style={{
+              ...getTextStyle("display", "bold"),
+              color: colors.text,
+              marginBottom: 16,
+            }}
+          >
+            {t("home.quickActions.title")}
           </Text>
 
-          <View className="flex-row flex-wrap justify-between">
+          <View
+            style={{
+              flexDirection: "row",
+              flexWrap: "wrap",
+              justifyContent: "space-between",
+            }}
+          >
             {quickActions.map((action, index) => (
               <TouchableOpacity
                 key={index}
                 onPress={action.action}
-                className={`w-[48%] ${action.color} rounded-2xl p-4 mb-4 shadow-md`}
                 style={{
-                  shadowColor: "#000",
-                  shadowOffset: { width: 0, height: 2 },
-                  shadowOpacity: 0.15,
-                  shadowRadius: 3.84,
-                  elevation: 5,
+                  width: "48%",
+                  backgroundColor: action.color,
+                  borderRadius: 16,
+                  padding: 16,
+                  marginBottom: 16,
+                  ...colors.shadows?.medium,
                 }}
               >
-                <View className="w-10 h-10 bg-white/20 rounded-xl items-center justify-center mb-3">
+                <View
+                  style={{
+                    width: 40,
+                    height: 40,
+                    backgroundColor: "rgba(255,255,255,0.2)",
+                    borderRadius: 12,
+                    alignItems: "center",
+                    justifyContent: "center",
+                    marginBottom: 12,
+                  }}
+                >
                   {action.iconType === "Ionicons" ? (
                     <Ionicons name={action.icon} size={20} color="white" />
                   ) : (
@@ -107,80 +185,216 @@ export default function Home() {
                   )}
                 </View>
 
-                <Text className="text-white font-semibold text-base mb-1">
+                <Text
+                  style={{
+                    ...getTextStyle("subtitle", "semiBold"),
+                    color: "white",
+                    marginBottom: 4,
+                  }}
+                >
                   {action.title}
                 </Text>
-                <Text className="text-white/80 text-sm">{action.subtitle}</Text>
+                <Text
+                  style={{
+                    ...getTextStyle("caption"),
+                    color: "rgba(255,255,255,0.8)",
+                  }}
+                >
+                  {action.subtitle}
+                </Text>
               </TouchableOpacity>
             ))}
           </View>
         </View>
 
         {/* Recent Activity */}
-        <View className="mx-4 mt-6">
-          <Text className="text-gray-800 text-xl font-bold mb-4">
-            Recent Activity
+        <View style={{ marginHorizontal: 16, marginTop: 24 }}>
+          <Text
+            style={{
+              ...getTextStyle("display", "bold"),
+              color: colors.text,
+              marginBottom: 16,
+            }}
+          >
+            {t("home.recentActivity.title")}
           </Text>
 
-          <View className="bg-white rounded-2xl p-4 shadow-sm border border-gray-100">
-            <View className="flex-row items-center mb-3">
-              <View className="w-10 h-10 bg-green-100 rounded-full items-center justify-center">
-                <MaterialIcons name="history" size={20} color="#059669" />
+          <View
+            style={{
+              backgroundColor: colors.surface,
+              borderRadius: 16,
+              padding: 16,
+              borderWidth: 1,
+              borderColor: colors.border,
+              ...colors.shadows?.small,
+            }}
+          >
+            <View
+              style={{
+                flexDirection: "row",
+                alignItems: "center",
+                marginBottom: 12,
+              }}
+            >
+              <View
+                style={{
+                  width: 40,
+                  height: 40,
+                  backgroundColor: colors.primaryLight + "20",
+                  borderRadius: 20,
+                  alignItems: "center",
+                  justifyContent: "center",
+                }}
+              >
+                <MaterialIcons
+                  name="history"
+                  size={20}
+                  color={colors.primary}
+                />
               </View>
-              <View className="ml-3 flex-1">
-                <Text className="text-gray-800 font-semibold">Last Read</Text>
-                <Text className="text-gray-500 text-sm">
-                  Surah Al-Fatiha - Verse 7
+              <View style={{ marginLeft: 12, flex: 1 }}>
+                <Text
+                  style={{
+                    ...getTextStyle("subtitle", "semiBold"),
+                    color: colors.text,
+                  }}
+                >
+                  {t("home.recentActivity.lastRead")}
+                </Text>
+                <Text
+                  style={{
+                    ...getTextStyle("caption"),
+                    color: colors.textSecondary,
+                  }}
+                >
+                  {t("home.recentActivity.lastReadDetails")}
                 </Text>
               </View>
               <TouchableOpacity>
-                <Ionicons name="chevron-forward" size={16} color="#9ca3af" />
+                <Ionicons
+                  name="chevron-forward"
+                  size={16}
+                  color={colors.textTertiary}
+                />
               </TouchableOpacity>
             </View>
 
-            <View className="h-px bg-gray-200 my-3" />
+            <View
+              style={{
+                height: 1,
+                backgroundColor: colors.border,
+                marginVertical: 12,
+              }}
+            />
 
-            <View className="flex-row items-center">
-              <View className="w-10 h-10 bg-blue-100 rounded-full items-center justify-center">
-                <Ionicons name="bookmark" size={20} color="#3b82f6" />
+            <View style={{ flexDirection: "row", alignItems: "center" }}>
+              <View
+                style={{
+                  width: 40,
+                  height: 40,
+                  backgroundColor: colors.info + "20",
+                  borderRadius: 20,
+                  alignItems: "center",
+                  justifyContent: "center",
+                }}
+              >
+                <Ionicons name="bookmark" size={20} color={colors.info} />
               </View>
-              <View className="ml-3 flex-1">
-                <Text className="text-gray-800 font-semibold">Bookmarked</Text>
-                <Text className="text-gray-500 text-sm">
-                  3 verses saved today
+              <View style={{ marginLeft: 12, flex: 1 }}>
+                <Text
+                  style={{
+                    ...getTextStyle("subtitle", "semiBold"),
+                    color: colors.text,
+                  }}
+                >
+                  {t("home.recentActivity.bookmarked")}
+                </Text>
+                <Text
+                  style={{
+                    ...getTextStyle("caption"),
+                    color: colors.textSecondary,
+                  }}
+                >
+                  {t("home.recentActivity.bookmarkedDetails")}
                 </Text>
               </View>
               <TouchableOpacity>
-                <Ionicons name="chevron-forward" size={16} color="#9ca3af" />
+                <Ionicons
+                  name="chevron-forward"
+                  size={16}
+                  color={colors.textTertiary}
+                />
               </TouchableOpacity>
             </View>
           </View>
         </View>
 
         {/* Daily Verse */}
-        <View className="mx-4 mt-6">
-          <Text className="text-gray-800 text-xl font-bold mb-4">
-            Verse of the Day
+        <View style={{ marginHorizontal: 16, marginTop: 24 }}>
+          <Text
+            style={{
+              ...getTextStyle("display", "bold"),
+              color: colors.text,
+              marginBottom: 16,
+            }}
+          >
+            {t("home.dailyVerse.title")}
           </Text>
 
-          <View className="bg-gradient-to-r from-purple-500 to-pink-500 rounded-2xl p-6 shadow-lg">
-            <View className="items-center mb-4">
-              <Text className="text-white text-center text-lg leading-relaxed font-medium">
-                "And whoever relies upon Allah - then He is sufficient for him."
+          <View
+            style={{
+              backgroundColor: colors.secondary,
+              borderRadius: 16,
+              padding: 24,
+              ...colors.shadows?.large,
+            }}
+          >
+            <View style={{ alignItems: "center", marginBottom: 16 }}>
+              <Text
+                style={{
+                  ...getTextStyle("subtitle", "medium"),
+                  color: "white",
+                  textAlign: "center",
+                  lineHeight: 24,
+                }}
+              >
+                {t("home.dailyVerse.verse")}
               </Text>
-              <Text className="text-purple-100 text-sm mt-3">— Quran 65:3</Text>
+              <Text
+                style={{
+                  ...getTextStyle("caption"),
+                  color: "rgba(255,255,255,0.8)",
+                  marginTop: 12,
+                }}
+              >
+                {t("home.dailyVerse.reference")}
+              </Text>
             </View>
 
-            <TouchableOpacity className="bg-white/20 rounded-xl p-3 flex-row items-center justify-center">
+            <TouchableOpacity
+              style={{
+                backgroundColor: "rgba(255,255,255,0.2)",
+                borderRadius: 12,
+                padding: 12,
+                flexDirection: "row",
+                alignItems: "center",
+                justifyContent: "center",
+              }}
+            >
               <Ionicons name="share-outline" size={18} color="white" />
-              <Text className="text-white font-semibold ml-2">Share Verse</Text>
+              <Text
+                style={{
+                  ...getTextStyle("subtitle", "semiBold"),
+                  color: "white",
+                  marginLeft: 8,
+                }}
+              >
+                {t("home.dailyVerse.share")}
+              </Text>
             </TouchableOpacity>
           </View>
         </View>
       </ScrollView>
-
-      {/* Custom Tab Bar */}
-      <CustomTabBar />
     </View>
   );
 }

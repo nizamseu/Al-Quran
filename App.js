@@ -1,22 +1,6 @@
-import { StatusBar } from "expo-status-bar";
-import { StyleSheet, Text, View } from "react-native";
-import "./global.css";
-export default function App() {
-  return (
-    <View style={styles.container}>
-      <Text className="text-red-400 font-bold text-7xl">
-        Open up App.js to start working on your app..
-      </Text>
-      <StatusBar style="auto" />
-    </View>
-  );
-}
+import { ExpoRoot } from "expo-router";
+import { registerRootComponent } from "expo";
 
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: "#fff",
-    alignItems: "center",
-    justifyContent: "center",
-  },
-});
+export default function App() {
+  return <ExpoRoot />;
+}

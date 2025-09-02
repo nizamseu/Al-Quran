@@ -14,6 +14,8 @@ import { router } from "expo-router";
 import { LanguageProvider } from "../contexts/LanguageContext";
 import { ThemeProvider } from "../contexts/ThemeContext";
 import { FontProvider } from "../contexts/FontContext";
+import { SettingsProvider } from "../contexts/SettingsContext";
+import { SearchProvider } from "../contexts/SearchContext";
 import { useTheme } from "../contexts/ThemeContext";
 import { useLanguage } from "../contexts/LanguageContext";
 import { useFont } from "../contexts/FontContext";
@@ -323,7 +325,11 @@ function LayoutWithProviders() {
     <LanguageProvider>
       <ThemeProvider>
         <FontProvider>
-          <Layout />
+          <SettingsProvider>
+            <SearchProvider>
+              <Layout />
+            </SearchProvider>
+          </SettingsProvider>
         </FontProvider>
       </ThemeProvider>
     </LanguageProvider>

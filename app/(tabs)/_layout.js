@@ -12,8 +12,8 @@ export default function TabsLayout() {
           backgroundColor: "white",
           borderTopWidth: 1,
           borderTopColor: "#e5e7eb",
-          height: 110,
-          paddingBottom: 10,
+          height: 70,
+          paddingBottom: 5,
           paddingTop: 10,
           elevation: 8,
           shadowColor: "#000",
@@ -122,3 +122,12 @@ export default function TabsLayout() {
     </Tabs>
   );
 }
+const d = {
+  availableLanguages: ["en", "bn"],
+  availableTafsir: { bn: 4, en: 3 },
+  availableTranslations: { bn: 5, en: 3 },
+  meccanSuras: 86,
+  medinanSuras: 28,
+  totalSuras: 114,
+  totalVerses: 6236,
+};

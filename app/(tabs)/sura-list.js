@@ -1,238 +1,364 @@
-import React, { useState } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import {
   View,
   Text,
   FlatList,
   TouchableOpacity,
   TextInput,
+  ActivityIndicator,
+  Modal,
+  ScrollView,
 } from "react-native";
 import { useRouter } from "expo-router";
 import { Ionicons, MaterialIcons } from "@expo/vector-icons";
 import { useTheme } from "../../contexts/ThemeContext";
 import { useLanguage } from "../../contexts/LanguageContext";
 import { useFont } from "../../contexts/FontContext";
-
-// Sample sura data
-const suraList = [
-  {
-    id: 1,
-    name: "Al-Fatiha",
-    englishName: "The Opening",
-    verses: 7,
-    revelation: "Meccan",
-  },
-  {
-    id: 2,
-    name: "Al-Baqarah",
-    englishName: "The Cow",
-    verses: 286,
-    revelation: "Medinan",
-  },
-  {
-    id: 3,
-    name: "Aal-e-Imran",
-    englishName: "Family of Imran",
-    verses: 200,
-    revelation: "Medinan",
-  },
-  {
-    id: 4,
-    name: "An-Nisa",
-    englishName: "The Women",
-    verses: 176,
-    revelation: "Medinan",
-  },
-  {
-    id: 5,
-    name: "Al-Maidah",
-    englishName: "The Table",
-    verses: 120,
-    revelation: "Medinan",
-  },
-  {
-    id: 6,
-    name: "Al-Anam",
-    englishName: "The Cattle",
-    verses: 165,
-    revelation: "Meccan",
-  },
-  {
-    id: 7,
-    name: "Al-Araf",
-    englishName: "The Heights",
-    verses: 206,
-    revelation: "Meccan",
-  },
-  {
-    id: 8,
-    name: "Al-Anfal",
-    englishName: "The Spoils of War",
-    verses: 75,
-    revelation: "Medinan",
-  },
-  {
-    id: 9,
-    name: "At-Tawbah",
-    englishName: "The Repentance",
-    verses: 129,
-    revelation: "Medinan",
-  },
-  {
-    id: 10,
-    name: "Yunus",
-    englishName: "Jonah",
-    verses: 109,
-    revelation: "Meccan",
-  },
-];
+import { useSettings } from "../../contexts/SettingsContext";
+import { useSearch } from "../../contexts/SearchContext";
+import dataService from "../../services/dataService";
 
 export default function SuraScreen() {
   const router = useRouter();
   const { colors, isDark } = useTheme();
   const { t } = useLanguage();
   const { getTextStyle } = useFont();
-  const [searchQuery, setSearchQuery] = useState("");
-  const [filteredSuras, setFilteredSuras] = useState(suraList);
+  const { settings, updateLastRead } = useSettings();
+  const {
+    searchQuery,
+    setSearchQuery,
+    searchResults,
+    addToSearchHistory,
+    getPopularSearches,
+    getSuggestions,
+  } = useSearch();
 
-  const handleSearch = (query) => {
-    setSearchQuery(query);
-    if (query.trim() === "") {
-      setFilteredSuras(suraList);
+  const [suraList, setSuraList] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [showFilters, setShowFilters] = useState(false);
+  const [sortBy, setSortBy] = useState("chronological"); // chronological, alphabetical, verses
+  const [filterBy, setFilterBy] = useState("all"); // all, meccan, medinan
+  const [searchSuggestions, setSearchSuggestions] = useState([]);
+  console.log("====================================");
+  console.log("suraList", suraList);
+  console.log("====================================");
+  useEffect(() => {
+    loadSuraData();
+  }, []);
+
+  useEffect(() => {
+    if (searchQuery.trim()) {
+      const suggestions = getSuggestions(searchQuery);
+      setSearchSuggestions(suggestions);
     } else {
-      const filtered = suraList.filter(
-        (sura) =>
-          sura.name.toLowerCase().includes(query.toLowerCase()) ||
-          sura.englishName.toLowerCase().includes(query.toLowerCase())
-      );
-      setFilteredSuras(filtered);
+      setSearchSuggestions([]);
+    }
+  }, [searchQuery]);
+
+  const loadSuraData = async () => {
+    try {
+      const allSuras = dataService.getAllSuras();
+      setSuraList(allSuras);
+    } catch (error) {
+      console.error("Error loading sura data:", error);
+    } finally {
+      setLoading(false);
     }
   };
 
-  const renderSuraItem = ({ item }) => (
-    <TouchableOpacity
-      style={{
-        backgroundColor: colors.surface,
-        marginHorizontal: 16,
-        marginBottom: 12,
-        borderRadius: 16,
-        shadowColor: isDark ? colors.text : "#000",
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.08,
-        shadowRadius: 3.84,
-        elevation: 5,
-        borderWidth: 1,
-        borderColor: colors.border,
-        borderColor: "#f3f4f6",
-      }}
-      onPress={() => router.push(`/sura/${item.id}`)}
-    >
-      <View style={{ flexDirection: "row", alignItems: "center", padding: 16 }}>
-        <View
-          style={{
-            width: 48,
-            height: 48,
-            backgroundColor: isDark ? "rgba(16, 185, 129, 0.1)" : "#f0fdf4",
-            borderRadius: 24,
-            alignItems: "center",
-            justifyContent: "center",
-            marginRight: 16,
-          }}
-        >
-          <Text
-            style={{
-              color: colors.primary,
-              fontWeight: "bold",
-              fontSize: 16,
-              ...getTextStyle("subtitle", "bold"),
-            }}
-          >
-            {item.id}
-          </Text>
-        </View>
+  const filteredAndSortedSuras = useMemo(() => {
+    let result = searchQuery.trim() ? searchResults.suras : suraList;
 
-        <View style={{ flex: 1 }}>
-          <Text
+    // Apply revelation filter
+    if (filterBy !== "all") {
+      result = result.filter((sura) => sura.revelationPlace === filterBy);
+    }
+
+    // Apply sorting
+    result = [...result].sort((a, b) => {
+      switch (sortBy) {
+        case "alphabetical":
+          return a.name.localeCompare(b.name);
+        case "verses":
+          return b.versesCount - a.versesCount;
+        case "chronological":
+        default:
+          return a.revelationOrder - b.revelationOrder;
+      }
+    });
+
+    return result;
+  }, [suraList, searchQuery, searchResults, filterBy, sortBy]);
+
+  const handleSuraPress = async (sura) => {
+    await updateLastRead(sura.id, 1);
+    if (searchQuery.trim()) {
+      addToSearchHistory(searchQuery);
+    }
+    router.push(`/sura/${sura.id}`);
+  };
+
+  const handleSearchSubmit = () => {
+    if (searchQuery.trim()) {
+      addToSearchHistory(searchQuery);
+    }
+  };
+
+  const getDisplayName = (sura) => {
+    switch (settings.languagePreference) {
+      case "bn":
+        return sura.nameBengali || sura.name;
+      case "ar":
+        return sura.nameArabic;
+      default:
+        return sura.name;
+    }
+  };
+
+  const getSubtitle = (sura) => {
+    switch (settings.languagePreference) {
+      case "bn":
+        return sura.name;
+      case "ar":
+        return sura.name;
+      default:
+        return sura.nameSimple;
+    }
+  };
+
+  if (loading) {
+    return (
+      <View
+        style={{
+          flex: 1,
+          justifyContent: "center",
+          alignItems: "center",
+          backgroundColor: colors.background,
+        }}
+      >
+        <ActivityIndicator size="large" color={colors.primary} />
+        <Text
+          style={{ color: colors.text, marginTop: 10, ...getTextStyle("body") }}
+        >
+          {t("common.loading")}
+        </Text>
+      </View>
+    );
+  }
+
+  const renderSuraItem = ({ item }) => {
+    const isLastRead = settings.lastRead?.suraId === item.id;
+
+    return (
+      <TouchableOpacity
+        style={{
+          backgroundColor: isLastRead ? colors.primaryLight : colors.surface,
+          marginHorizontal: 16,
+          marginBottom: 12,
+          borderRadius: 16,
+          shadowColor: isDark ? colors.text : "#000",
+          shadowOffset: { width: 0, height: 2 },
+          shadowOpacity: 0.08,
+          shadowRadius: 3.84,
+          elevation: 5,
+          borderWidth: 1,
+          borderColor: isLastRead ? colors.primary : colors.border,
+        }}
+        onPress={() => handleSuraPress(item)}
+      >
+        <View
+          style={{ flexDirection: "row", alignItems: "center", padding: 16 }}
+        >
+          <View
             style={{
-              color: colors.text,
-              fontSize: 18,
-              fontWeight: "bold",
-              marginBottom: 4,
-              ...getTextStyle("title", "bold"),
+              width: 48,
+              height: 48,
+              backgroundColor: isDark ? "rgba(16, 185, 129, 0.1)" : "#f0fdf4",
+              borderRadius: 24,
+              alignItems: "center",
+              justifyContent: "center",
+              marginRight: 16,
             }}
           >
-            {item.name}
-          </Text>
-          <Text
-            style={{
-              color: colors.textSecondary,
-              fontSize: 14,
-              marginBottom: 4,
-              ...getTextStyle("body"),
-            }}
-          >
-            {item.englishName}
-          </Text>
-          <View style={{ flexDirection: "row", alignItems: "center" }}>
+            <Text
+              style={{
+                color: colors.primary,
+                fontWeight: "bold",
+                fontSize: 16,
+                ...getTextStyle("subtitle", "bold"),
+              }}
+            >
+              {item.id}
+            </Text>
+          </View>
+
+          <View style={{ flex: 1 }}>
             <View
               style={{
                 flexDirection: "row",
                 alignItems: "center",
-                marginRight: 16,
+                marginBottom: 4,
               }}
             >
-              <Ionicons
-                name="document-text-outline"
-                size={14}
-                color={colors.textSecondary}
-              />
               <Text
                 style={{
-                  color: colors.textSecondary,
-                  fontSize: 12,
-                  marginLeft: 4,
-                  ...getTextStyle("caption"),
+                  color: colors.text,
+                  fontSize: 18,
+                  fontWeight: "bold",
+                  flex: 1,
+                  ...getTextStyle("title", "bold"),
                 }}
               >
-                {item.verses} {t("suraList.totalVerses")}
+                {getDisplayName(item)}
               </Text>
+              {isLastRead && (
+                <View
+                  style={{
+                    backgroundColor: colors.primary,
+                    paddingHorizontal: 8,
+                    paddingVertical: 2,
+                    borderRadius: 10,
+                    marginLeft: 8,
+                  }}
+                >
+                  <Text
+                    style={{
+                      color: "white",
+                      fontSize: 10,
+                      fontWeight: "bold",
+                    }}
+                  >
+                    {t("suraList.lastRead")}
+                  </Text>
+                </View>
+              )}
             </View>
-            <View style={{ flexDirection: "row", alignItems: "center" }}>
-              <MaterialIcons
-                name={item.revelation === "Meccan" ? "location-city" : "domain"}
-                size={14}
-                color={colors.textSecondary}
-              />
+
+            <Text
+              style={{
+                color: colors.textSecondary,
+                fontSize: 14,
+                marginBottom: 4,
+                ...getTextStyle("body"),
+              }}
+            >
+              {getSubtitle(item)}
+            </Text>
+
+            {settings.languagePreference === "en" ||
+            settings.languagePreference === "bn" ? (
               <Text
                 style={{
                   color: colors.textSecondary,
-                  fontSize: 12,
-                  marginLeft: 4,
-                  ...getTextStyle("caption"),
+                  fontSize: 16,
+                  marginBottom: 8,
+                  textAlign: "right",
+                  fontFamily: "System",
                 }}
               >
-                {t(`suraList.revelation.${item.revelation.toLowerCase()}`)}
+                {item.nameArabic}
               </Text>
+            ) : null}
+
+            <View
+              style={{
+                flexDirection: "row",
+                alignItems: "center",
+                flexWrap: "wrap",
+              }}
+            >
+              <View
+                style={{
+                  flexDirection: "row",
+                  alignItems: "center",
+                  marginRight: 16,
+                }}
+              >
+                <Ionicons
+                  name="document-text-outline"
+                  size={14}
+                  color={colors.textSecondary}
+                />
+                <Text
+                  style={{
+                    color: colors.textSecondary,
+                    fontSize: 12,
+                    marginLeft: 4,
+                    ...getTextStyle("caption"),
+                  }}
+                >
+                  {item.versesCount} {t("suraList.totalVerses")}
+                </Text>
+              </View>
+
+              <View
+                style={{
+                  flexDirection: "row",
+                  alignItems: "center",
+                  marginRight: 16,
+                }}
+              >
+                <MaterialIcons
+                  name={
+                    item.revelationPlace === "makkah"
+                      ? "location-city"
+                      : "domain"
+                  }
+                  size={14}
+                  color={colors.textSecondary}
+                />
+                <Text
+                  style={{
+                    color: colors.textSecondary,
+                    fontSize: 12,
+                    marginLeft: 4,
+                    ...getTextStyle("caption"),
+                  }}
+                >
+                  {t(
+                    `suraList.revelation.${item.revelationPlace?.toLowerCase() || "unknown"}`
+                  )}
+                </Text>
+              </View>
+
+              <View style={{ flexDirection: "row", alignItems: "center" }}>
+                <MaterialIcons
+                  name="format-list-numbered"
+                  size={14}
+                  color={colors.textSecondary}
+                />
+                <Text
+                  style={{
+                    color: colors.textSecondary,
+                    fontSize: 12,
+                    marginLeft: 4,
+                    ...getTextStyle("caption"),
+                  }}
+                >
+                  #{item.revelationOrder}
+                </Text>
+              </View>
             </View>
           </View>
-        </View>
 
-        <View
-          style={{
-            width: 32,
-            height: 32,
-            alignItems: "center",
-            justifyContent: "center",
-          }}
-        >
-          <Ionicons
-            name="chevron-forward"
-            size={20}
-            color={colors.textSecondary}
-          />
+          <View
+            style={{
+              width: 32,
+              height: 32,
+              alignItems: "center",
+              justifyContent: "center",
+            }}
+          >
+            <Ionicons
+              name="chevron-forward"
+              size={20}
+              color={colors.textSecondary}
+            />
+          </View>
         </View>
-      </View>
-    </TouchableOpacity>
-  );
+      </TouchableOpacity>
+    );
+  };
 
   const renderHeader = () => (
     <View style={{ marginHorizontal: 16, marginBottom: 24 }}>
@@ -267,10 +393,11 @@ export default function SuraScreen() {
           placeholder={t("suraList.searchPlaceholder")}
           placeholderTextColor={colors.textSecondary}
           value={searchQuery}
-          onChangeText={handleSearch}
+          onChangeText={setSearchQuery}
+          onSubmitEditing={handleSearchSubmit}
         />
         {searchQuery.length > 0 && (
-          <TouchableOpacity onPress={() => handleSearch("")}>
+          <TouchableOpacity onPress={() => setSearchQuery("")}>
             <Ionicons
               name="close-circle"
               size={20}
@@ -278,7 +405,48 @@ export default function SuraScreen() {
             />
           </TouchableOpacity>
         )}
+        <TouchableOpacity
+          onPress={() => setShowFilters(true)}
+          style={{ marginLeft: 8 }}
+        >
+          <Ionicons name="options" size={20} color={colors.textSecondary} />
+        </TouchableOpacity>
       </View>
+
+      {/* Search Suggestions */}
+      {searchSuggestions.length > 0 && (
+        <View
+          style={{
+            backgroundColor: colors.surface,
+            borderRadius: 12,
+            marginBottom: 16,
+            borderWidth: 1,
+            borderColor: colors.border,
+          }}
+        >
+          {searchSuggestions.map((suggestion, index) => (
+            <TouchableOpacity
+              key={suggestion.id}
+              style={{
+                padding: 12,
+                borderBottomWidth: index < searchSuggestions.length - 1 ? 1 : 0,
+                borderBottomColor: colors.border,
+              }}
+              onPress={() => {
+                setSearchQuery(suggestion.title);
+                handleSearchSubmit();
+              }}
+            >
+              <Text style={{ color: colors.text, fontWeight: "bold" }}>
+                {suggestion.title}
+              </Text>
+              <Text style={{ color: colors.textSecondary, fontSize: 12 }}>
+                {suggestion.subtitle} • {suggestion.versesCount} verses
+              </Text>
+            </TouchableOpacity>
+          ))}
+        </View>
+      )}
 
       {/* Quick Stats */}
       <View
@@ -313,7 +481,7 @@ export default function SuraScreen() {
                 marginLeft: 8,
               }}
             >
-              Total Suras
+              {t("suraList.totalSuras")}
             </Text>
           </View>
           <Text style={{ color: "white", fontSize: 24, fontWeight: "bold" }}>
@@ -346,7 +514,7 @@ export default function SuraScreen() {
                 marginLeft: 8,
               }}
             >
-              Total Verses
+              {t("suraList.totalVerses")}
             </Text>
           </View>
           <Text style={{ color: "white", fontSize: 24, fontWeight: "bold" }}>
@@ -355,29 +523,219 @@ export default function SuraScreen() {
         </View>
       </View>
 
-      <Text
+      {/* Filter and Sort Bar */}
+      <View
         style={{
-          color: "#1f2937",
-          fontSize: 20,
-          fontWeight: "bold",
-          marginBottom: 8,
+          flexDirection: "row",
+          justifyContent: "space-between",
+          alignItems: "center",
+          marginBottom: 16,
         }}
       >
-        All Suras {searchQuery && `(${filteredSuras.length} found)`}
-      </Text>
+        <Text
+          style={{
+            color: colors.text,
+            fontSize: 20,
+            fontWeight: "bold",
+            ...getTextStyle("title", "bold"),
+          }}
+        >
+          {t("suraList.allSuras")}{" "}
+          {searchQuery &&
+            `(${filteredAndSortedSuras.length} ${t("common.found")})`}
+        </Text>
+
+        {!searchQuery && (
+          <View style={{ flexDirection: "row", alignItems: "center" }}>
+            <TouchableOpacity
+              style={{
+                backgroundColor: colors.surface,
+                paddingHorizontal: 12,
+                paddingVertical: 6,
+                borderRadius: 20,
+                borderWidth: 1,
+                borderColor: colors.border,
+                marginLeft: 8,
+              }}
+              onPress={() => setShowFilters(true)}
+            >
+              <Text style={{ color: colors.text, fontSize: 12 }}>
+                {t(`suraList.sort.${sortBy}`)}
+              </Text>
+            </TouchableOpacity>
+          </View>
+        )}
+      </View>
     </View>
+  );
+
+  const renderFiltersModal = () => (
+    <Modal
+      visible={showFilters}
+      animationType="slide"
+      transparent={true}
+      onRequestClose={() => setShowFilters(false)}
+    >
+      <View
+        style={{
+          flex: 1,
+          justifyContent: "flex-end",
+          backgroundColor: "rgba(0,0,0,0.5)",
+        }}
+      >
+        <View
+          style={{
+            backgroundColor: colors.surface,
+            borderTopLeftRadius: 20,
+            borderTopRightRadius: 20,
+            padding: 20,
+            maxHeight: "70%",
+          }}
+        >
+          <View
+            style={{
+              flexDirection: "row",
+              justifyContent: "space-between",
+              alignItems: "center",
+              marginBottom: 20,
+            }}
+          >
+            <Text
+              style={{
+                fontSize: 18,
+                fontWeight: "bold",
+                color: colors.text,
+                ...getTextStyle("title", "bold"),
+              }}
+            >
+              {t("suraList.filtersAndSort")}
+            </Text>
+            <TouchableOpacity onPress={() => setShowFilters(false)}>
+              <Ionicons name="close" size={24} color={colors.text} />
+            </TouchableOpacity>
+          </View>
+
+          <ScrollView showsVerticalScrollIndicator={false}>
+            {/* Sort Options */}
+            <Text
+              style={{
+                fontSize: 16,
+                fontWeight: "600",
+                color: colors.text,
+                marginBottom: 12,
+                ...getTextStyle("subtitle", "bold"),
+              }}
+            >
+              {t("suraList.sortBy")}
+            </Text>
+
+            {["chronological", "alphabetical", "verses"].map((option) => (
+              <TouchableOpacity
+                key={option}
+                style={{
+                  flexDirection: "row",
+                  alignItems: "center",
+                  paddingVertical: 12,
+                  paddingHorizontal: 16,
+                  backgroundColor:
+                    sortBy === option ? colors.primaryLight : "transparent",
+                  borderRadius: 8,
+                  marginBottom: 8,
+                }}
+                onPress={() => setSortBy(option)}
+              >
+                <Ionicons
+                  name={
+                    sortBy === option ? "radio-button-on" : "radio-button-off"
+                  }
+                  size={20}
+                  color={
+                    sortBy === option ? colors.primary : colors.textSecondary
+                  }
+                />
+                <Text
+                  style={{
+                    marginLeft: 12,
+                    color: sortBy === option ? colors.primary : colors.text,
+                    ...getTextStyle("body"),
+                  }}
+                >
+                  {t(`suraList.sort.${option}`)}
+                </Text>
+              </TouchableOpacity>
+            ))}
+
+            {/* Filter Options */}
+            <Text
+              style={{
+                fontSize: 16,
+                fontWeight: "600",
+                color: colors.text,
+                marginTop: 20,
+                marginBottom: 12,
+                ...getTextStyle("subtitle", "bold"),
+              }}
+            >
+              {t("suraList.filterBy")}
+            </Text>
+
+            {["all", "makkah", "madinah"].map((option) => (
+              <TouchableOpacity
+                key={option}
+                style={{
+                  flexDirection: "row",
+                  alignItems: "center",
+                  paddingVertical: 12,
+                  paddingHorizontal: 16,
+                  backgroundColor:
+                    filterBy === option ? colors.primaryLight : "transparent",
+                  borderRadius: 8,
+                  marginBottom: 8,
+                }}
+                onPress={() => setFilterBy(option)}
+              >
+                <Ionicons
+                  name={
+                    filterBy === option ? "radio-button-on" : "radio-button-off"
+                  }
+                  size={20}
+                  color={
+                    filterBy === option ? colors.primary : colors.textSecondary
+                  }
+                />
+                <Text
+                  style={{
+                    marginLeft: 12,
+                    color: filterBy === option ? colors.primary : colors.text,
+                    ...getTextStyle("body"),
+                  }}
+                >
+                  {option === "all"
+                    ? t("common.all")
+                    : t(`suraList.revelation.${option}`)}
+                </Text>
+              </TouchableOpacity>
+            ))}
+          </ScrollView>
+        </View>
+      </View>
+    </Modal>
   );
 
   return (
     <View style={{ flex: 1, backgroundColor: colors.background }}>
       <FlatList
-        data={filteredSuras}
+        data={filteredAndSortedSuras}
         renderItem={renderSuraItem}
         keyExtractor={(item) => item.id.toString()}
         showsVerticalScrollIndicator={false}
         ListHeaderComponent={renderHeader}
         contentContainerStyle={{ paddingTop: 20, paddingBottom: 140 }}
+        initialNumToRender={20}
+        maxToRenderPerBatch={10}
+        windowSize={10}
       />
+      {renderFiltersModal()}
     </View>
   );
 }

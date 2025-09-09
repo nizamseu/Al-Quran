@@ -15,6 +15,31 @@ export const english = {
     settings: "Settings",
   },
 
+  // Common
+  playSura: "Play Sura",
+  selectTranslations: "Select Translations",
+  selectTafsir: "Select Tafsir",
+  selected: "selected",
+  clearAll: "Clear All",
+  tafsir: "Tafsir",
+  translation: "Translation",
+  ayah: "Ayah",
+  ayahRange: "Ayah Range",
+  thisTafsirCovers: "This tafsir covers",
+  ok: "OK",
+  viewRange: "View Range",
+  loading: "Loading...",
+  noTafsirAvailable: "No tafsir available for this verse",
+  coversMultipleAyahs: "Covers multiple ayahs",
+  fontSettings: "Font Settings",
+  arabicFonts: "Arabic Fonts",
+  bengaliFonts: "Bengali Fonts",
+  arabic: "Arabic",
+  bengali: "Bengali",
+  size: "Size",
+  fontSize: "Font Size",
+  preview: "Preview",
+
   // Drawer
   drawer: {
     about: "About",

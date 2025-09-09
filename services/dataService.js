@@ -395,10 +395,131 @@ class DataService {
     }));
   }
 
-  getVerseRecitation(suraId, verseNumber, reciter = "abdul-basit") {
-    // For now, return null as recitation data needs to be implemented
-    // This would typically return audio URL for the verse
-    return null;
+  // Load recitation data dynamically
+  async loadRecitationData(type, reciter) {
+    try {
+      let recitationData;
+      if (type === "ayah-by-ayah") {
+        if (reciter === "abdul-basit") {
+          recitationData = await import(
+            "../assets/data/recitation/ayah-by-ayah/ayah-recitation-abdul-basit-abdul-samad-mujawwad-hafs.json"
+          );
+        } else if (reciter === "yasser-al-dosari") {
+          recitationData = await import(
+            "../assets/data/recitation/ayah-by-ayah/ayah-recitation-yasser-al-dosari-murattal-hafs.json"
+          );
+        }
+      } else if (type === "sura-by-sura") {
+        if (reciter === "ali-abdur-rahman-al-huthaify") {
+          recitationData = await import(
+            "../assets/data/recitation/sura-by-sura/ali-abdur-rahman-al-huthaify.json"
+          );
+        } else if (reciter === "mishari-rashid-al-afasy") {
+          recitationData = await import(
+            "../assets/data/recitation/sura-by-sura/mishari-rashid-al-afasy.json"
+          );
+        }
+      }
+      return recitationData?.default || recitationData;
+    } catch (error) {
+      console.error("Error loading recitation data:", error);
+      return null;
+    }
+  }
+
+  // Get available reciters
+  getAvailableReciters() {
+    return {
+      "ayah-by-ayah": [
+        {
+          id: "abdul-basit",
+          name: "Abdul Basit Abdul Samad (Mujawwad)",
+          language: "ar",
+          style: "Mujawwad",
+        },
+        {
+          id: "yasser-al-dosari",
+          name: "Yasser Al-Dosari (Murattal)",
+          language: "ar",
+          style: "Murattal",
+        },
+      ],
+      "sura-by-sura": [
+        {
+          id: "ali-abdur-rahman-al-huthaify",
+          name: "Ali Abdur Rahman Al-Huthaify",
+          language: "ar",
+          style: "Murattal",
+        },
+        {
+          id: "mishari-rashid-al-afasy",
+          name: "Mishari Rashid Al-Afasy",
+          language: "ar",
+          style: "Murattal",
+        },
+      ],
+    };
+  }
+
+  // Get verse recitation
+  async getVerseRecitation(suraId, verseNumber, reciter = "abdul-basit") {
+    try {
+      const recitationData = await this.loadRecitationData(
+        "ayah-by-ayah",
+        reciter
+      );
+      if (!recitationData) return null;
+
+      const verseKey = `${suraId}:${verseNumber}`;
+      return recitationData[verseKey] || null;
+    } catch (error) {
+      console.error("Error getting verse recitation:", error);
+      return null;
+    }
+  }
+
+  // Get sura recitation
+  async getSuraRecitation(suraId, reciter = "mishari-rashid-al-afasy") {
+    try {
+      const recitationData = await this.loadRecitationData(
+        "sura-by-sura",
+        reciter
+      );
+      if (!recitationData) return null;
+
+      return recitationData[suraId.toString()] || null;
+    } catch (error) {
+      console.error("Error getting sura recitation:", error);
+      return null;
+    }
+  }
+
+  // Get tafsir with ayah range support
+  getTafsirWithRange(
+    suraIdOrVerseKey,
+    verseNumberOrLanguage,
+    tafsirSourceOrSource
+  ) {
+    const tafsir = this.getTafsir(
+      suraIdOrVerseKey,
+      verseNumberOrLanguage,
+      tafsirSourceOrSource
+    );
+
+    if (tafsir && typeof tafsir === "object" && tafsir.ayah_keys) {
+      // If tafsir has ayah_keys, it covers multiple verses
+      return {
+        text: tafsir.text || tafsir.t,
+        ayahKeys: tafsir.ayah_keys,
+        hasRange: true,
+      };
+    }
+
+    return {
+      text: tafsir,
+      ayahKeys: null,
+      hasRange: false,
+    };
   }
 }
 

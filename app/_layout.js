@@ -16,10 +16,12 @@ import { ThemeProvider } from "../contexts/ThemeContext";
 import { FontProvider } from "../contexts/FontContext";
 import { SettingsProvider } from "../contexts/SettingsContext";
 import { SearchProvider } from "../contexts/SearchContext";
+import { AudioProvider } from "../contexts/AudioContext";
 import { useTheme } from "../contexts/ThemeContext";
 import { useLanguage } from "../contexts/LanguageContext";
 import { useFont } from "../contexts/FontContext";
 import FloatingTabBar from "../components/FloatingTabBar";
+import GlobalAudioPlayer from "../components/GlobalAudioPlayer";
 
 const { width } = Dimensions.get("window");
 
@@ -327,7 +329,10 @@ function LayoutWithProviders() {
         <FontProvider>
           <SettingsProvider>
             <SearchProvider>
-              <Layout />
+              <AudioProvider>
+                <Layout />
+                <GlobalAudioPlayer />
+              </AudioProvider>
             </SearchProvider>
           </SettingsProvider>
         </FontProvider>

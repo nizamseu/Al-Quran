@@ -15,6 +15,31 @@ export const bengali = {
     settings: "সেটিংস",
   },
 
+  // Common
+  playSura: "সূরা চালান",
+  selectTranslations: "অনুবাদ নির্বাচন করুন",
+  selectTafsir: "তাফসির নির্বাচন করুন",
+  selected: "নির্বাচিত",
+  clearAll: "সব পরিষ্কার করুন",
+  tafsir: "তাফসির",
+  translation: "অনুবাদ",
+  ayah: "আয়াত",
+  ayahRange: "আয়াত পরিসর",
+  thisTafsirCovers: "এই তাফসির অন্তর্ভুক্ত করে",
+  ok: "ঠিক আছে",
+  viewRange: "পরিসর দেখুন",
+  loading: "লোড হচ্ছে...",
+  noTafsirAvailable: "এই আয়াতের জন্য কোনো তাফসির উপলব্ধ নেই",
+  coversMultipleAyahs: "একাধিক আয়াত অন্তর্ভুক্ত করে",
+  fontSettings: "ফন্ট সেটিংস",
+  arabicFonts: "আরবি ফন্ট",
+  bengaliFonts: "বাংলা ফন্ট",
+  arabic: "আরবি",
+  bengali: "বাংলা",
+  size: "আকার",
+  fontSize: "ফন্টের আকার",
+  preview: "প্রিভিউ",
+
   // Drawer
   drawer: {
     about: "সম্পর্কে",

@@ -20,9 +20,16 @@ import { useTheme } from "../../contexts/ThemeContext";
 import { useLanguage } from "../../contexts/LanguageContext";
 import { useFont } from "../../contexts/FontContext";
 import { useSettings } from "../../contexts/SettingsContext";
+import { useAudio } from "../../contexts/AudioContext";
 
 // Service Imports
 import dataService from "../../services/dataService";
+
+// Component Imports
+import MultipleTranslationSelector from "../../components/MultipleTranslationSelector";
+import MultipleTafsirSelector from "../../components/MultipleTafsirSelector";
+import TafsirModal from "../../components/TafsirModal";
+import FontSelectionModal from "../../components/FontSelectionModal";
 
 const { width: screenWidth } = Dimensions.get("window");
 
@@ -37,6 +44,8 @@ export default function SuraDetailsScreen() {
   const { t, currentLanguage } = useLanguage();
   const {
     getTextStyle,
+    getArabicTextStyle,
+    getBengaliTextStyle,
     fontSize,
     fontFamily,
     fontFamilies,
@@ -51,18 +60,26 @@ export default function SuraDetailsScreen() {
     isBookmarked,
     updateReadingProgress,
   } = useSettings();
+  const {
+    playSura,
+    playAyah,
+    currentTrack,
+    isPlaying: audioIsPlaying,
+  } = useAudio();
 
   // State
   const [loading, setLoading] = useState(true);
   const [sura, setSura] = useState(null);
   const [verses, setVerses] = useState([]);
-  const [translations, setTranslations] = useState([]);
-  const [tafsir, setTafsir] = useState([]);
-  const [currentTranslation, setCurrentTranslation] = useState(null);
-  const [currentTafsir, setCurrentTafsir] = useState(null);
-  const [showTranslations, setShowTranslations] = useState(false);
-  const [showTafsir, setShowTafsir] = useState(false);
-  const [showSettings, setShowSettings] = useState(false);
+  const [availableTranslations, setAvailableTranslations] = useState([]);
+  const [availableTafsir, setAvailableTafsir] = useState([]);
+  const [selectedTranslations, setSelectedTranslations] = useState([]);
+  const [selectedTafsir, setSelectedTafsir] = useState([]);
+  const [showTranslationSelector, setShowTranslationSelector] = useState(false);
+  const [showTafsirSelector, setShowTafsirSelector] = useState(false);
+  const [showTafsirModal, setShowTafsirModal] = useState(false);
+  const [showFontModal, setShowFontModal] = useState(false);
+  const [selectedVerseForTafsir, setSelectedVerseForTafsir] = useState(null);
   const [playingVerse, setPlayingVerse] = useState(null);
   const [isPlaying, setIsPlaying] = useState(false);
   const [selectedVerse, setSelectedVerse] = useState(null);
@@ -72,34 +89,6 @@ export default function SuraDetailsScreen() {
   );
 
   const suraId = parseInt(id);
-
-  // Font helper functions
-  const getArabicFont = () => {
-    const arabicFonts = [
-      "QPC Hafs Font",
-      "QPC V1 Font",
-      "Indopak Nastaleeq Font",
-      "KFGQPC Nastaleeq",
-      "Amiri",
-      "System",
-    ];
-
-    // You can add logic here to select based on user preference
-    // For now, return the first available font
-    return arabicFonts[0];
-  };
-
-  const getBengaliFont = () => {
-    const bengaliFonts = [
-      "NotoSansBengali-Regular",
-      "NotoSansBengali",
-      "Kalpurush",
-      "SolaimanLipi",
-      "System",
-    ];
-
-    return bengaliFonts[0];
-  };
 
   useEffect(() => {
     loadSuraData();
@@ -134,26 +123,26 @@ export default function SuraDetailsScreen() {
       setVerses(suraVerses);
 
       // Get available translations
-      const availableTranslations =
+      const translations =
         dataService.getAvailableTranslations(currentLanguage);
-      console.log("Available translations:", availableTranslations);
-      setTranslations(availableTranslations);
+      console.log("Available translations:", translations);
+      setAvailableTranslations(translations);
 
-      // Set default translation
-      if (availableTranslations.length > 0 && !currentTranslation) {
-        setCurrentTranslation(availableTranslations[0]);
-        console.log("Set default translation:", availableTranslations[0]);
+      // Set default translation if none selected
+      if (translations.length > 0 && selectedTranslations.length === 0) {
+        setSelectedTranslations([translations[0]]);
+        console.log("Set default translation:", translations[0]);
       }
 
       // Get available tafsir
-      const availableTafsir = dataService.getAvailableTafsir(currentLanguage);
-      console.log("Available tafsir:", availableTafsir);
-      setTafsir(availableTafsir);
+      const tafsir = dataService.getAvailableTafsir(currentLanguage);
+      console.log("Available tafsir:", tafsir);
+      setAvailableTafsir(tafsir);
 
-      // Set default tafsir
-      if (availableTafsir.length > 0 && !currentTafsir) {
-        setCurrentTafsir(availableTafsir[0]);
-        console.log("Set default tafsir:", availableTafsir[0]);
+      // Set default tafsir if none selected
+      if (tafsir.length > 0 && selectedTafsir.length === 0) {
+        setSelectedTafsir([tafsir[0]]);
+        console.log("Set default tafsir:", tafsir[0]);
       }
     } catch (error) {
       console.error("Error loading sura data:", error);
@@ -170,38 +159,25 @@ export default function SuraDetailsScreen() {
 
   const handlePlayVerse = async (verseNumber) => {
     try {
-      // Stop current audio if playing
-      if (soundRef.current) {
-        await soundRef.current.unloadAsync();
-      }
-
-      // If clicking the same verse that's playing, stop it
-      if (playingVerse === verseNumber && isPlaying) {
-        setIsPlaying(false);
-        setPlayingVerse(null);
-        return;
-      }
-
-      // For now, just simulate audio playback since recitation data is not available
-      setPlayingVerse(verseNumber);
-      setIsPlaying(true);
-
-      // Simulate audio duration (remove this when real audio is implemented)
-      setTimeout(() => {
-        setIsPlaying(false);
-        setPlayingVerse(null);
-      }, 3000); // 3 seconds simulation
-
-      Alert.alert(
-        "Audio",
-        `Playing verse ${verseNumber}. Audio files need to be implemented.`
-      );
+      await playAyah(suraId, verseNumber, sura.nameSimple);
     } catch (error) {
       console.error("Error playing verse:", error);
       Alert.alert("Error", "Failed to play verse audio.");
-      setIsPlaying(false);
-      setPlayingVerse(null);
     }
+  };
+
+  const handlePlaySura = async () => {
+    try {
+      await playSura(suraId, sura.nameSimple);
+    } catch (error) {
+      console.error("Error playing sura:", error);
+      Alert.alert("Error", "Failed to play sura audio.");
+    }
+  };
+
+  const handleShowTafsir = (verse) => {
+    setSelectedVerseForTafsir(verse);
+    setShowTafsirModal(true);
   };
 
   const handleShareVerse = async (verse) => {
@@ -233,24 +209,22 @@ Shared from Al-Quran App`;
   };
 
   const renderVerse = (verse) => {
-    const verseTranslation = currentTranslation
-      ? dataService.getTranslation(
+    // Get translations for selected translation sources
+    const verseTranslations = selectedTranslations
+      .map((translation) => ({
+        ...translation,
+        text: dataService.getTranslation(
           verse.verseKey,
           currentLanguage,
-          currentTranslation.id
-        )
-      : null;
+          translation.id
+        ),
+      }))
+      .filter((t) => t.text);
 
-    const verseTafsir = currentTafsir
-      ? dataService.getTafsir(verse.verseKey, currentLanguage, currentTafsir.id)
-      : null;
-
-    // Debug logging
-    console.log("Verse:", verse.verseKey);
-    console.log("Current translation:", currentTranslation);
-    console.log("Translation result:", verseTranslation);
-    console.log("Current tafsir:", currentTafsir);
-    console.log("Tafsir result:", verseTafsir);
+    // Check if any tafsir is available for this verse
+    const hasTafsir = selectedTafsir.some((tafsir) =>
+      dataService.getTafsir(verse.verseKey, currentLanguage, tafsir.id)
+    );
 
     return (
       <View
@@ -297,28 +271,37 @@ Shared from Al-Quran App`;
           </View>
 
           <View style={{ flexDirection: "row", gap: 8 }}>
+            {/* Play Button */}
             <TouchableOpacity
               style={{
                 padding: 8,
                 borderRadius: 20,
-                backgroundColor:
-                  playingVerse === verse.ayahNumber
-                    ? colors.primary + "30"
-                    : colors.primaryLight + "20",
+                backgroundColor: colors.primaryLight + "20",
               }}
               onPress={() => handlePlayVerse(verse.ayahNumber)}
             >
-              <Ionicons
-                name={
-                  playingVerse === verse.ayahNumber && isPlaying
-                    ? "pause"
-                    : "play"
-                }
-                size={20}
-                color={colors.primary}
-              />
+              <Ionicons name="play" size={20} color={colors.primary} />
             </TouchableOpacity>
 
+            {/* Tafsir Button */}
+            {hasTafsir && (
+              <TouchableOpacity
+                style={{
+                  padding: 8,
+                  borderRadius: 20,
+                  backgroundColor: colors.warning + "20",
+                }}
+                onPress={() => handleShowTafsir(verse)}
+              >
+                <Ionicons
+                  name="book-outline"
+                  size={20}
+                  color={colors.warning}
+                />
+              </TouchableOpacity>
+            )}
+
+            {/* More Options Button */}
             <TouchableOpacity
               style={{
                 padding: 8,
@@ -338,91 +321,60 @@ Shared from Al-Quran App`;
 
         {/* Arabic Text */}
         <Text
-          style={{
-            fontSize:
-              fontSize === "small" ? 20 : fontSize === "medium" ? 24 : 28,
-            lineHeight:
-              fontSize === "small" ? 32 : fontSize === "medium" ? 38 : 44,
-            textAlign: "right",
-            color: colors.text,
-            marginBottom: 16,
-            fontFamily: getArabicFont(),
-          }}
+          style={[
+            getArabicTextStyle("normal"),
+            {
+              marginBottom: 16,
+              color: colors.text,
+            },
+          ]}
         >
           {verse.text}
         </Text>
 
-        {/* Translation */}
-        {(readingMode === "translation" || readingMode === "both") && (
-          <View
-            style={{
-              backgroundColor: colors.primaryLight + "10",
-              padding: 12,
-              borderRadius: 8,
-              marginBottom: 12,
-              borderLeftWidth: 3,
-              borderLeftColor: colors.primary,
-            }}
-          >
-            <Text
-              style={{
-                fontSize: 14,
-                color: colors.primary,
-                fontWeight: "600",
-                marginBottom: 4,
-              }}
-            >
-              Translation (
-              {currentTranslation?.name || "No translation selected"})
-            </Text>
-            <Text
-              style={{
-                fontSize: 16,
-                lineHeight: 24,
-                color: colors.text,
-                fontFamily:
-                  currentLanguage === "bn" ? getBengaliFont() : "System",
-              }}
-            >
-              {verseTranslation || "Translation not available for this verse"}
-            </Text>
-          </View>
-        )}
-
-        {/* Tafsir */}
-        {(readingMode === "tafsir" || readingMode === "both") && (
-          <View
-            style={{
-              backgroundColor: colors.warning + "10",
-              padding: 12,
-              borderRadius: 8,
-              borderLeftWidth: 3,
-              borderLeftColor: colors.warning,
-            }}
-          >
-            <Text
-              style={{
-                fontSize: 14,
-                color: colors.warning,
-                fontWeight: "600",
-                marginBottom: 4,
-              }}
-            >
-              Tafsir ({currentTafsir?.name || "No tafsir selected"})
-            </Text>
-            <Text
-              style={{
-                fontSize: 15,
-                lineHeight: 22,
-                color: colors.text,
-                fontFamily:
-                  currentLanguage === "bn" ? getBengaliFont() : "System",
-              }}
-            >
-              {verseTafsir || "Tafsir not available for this verse"}
-            </Text>
-          </View>
-        )}
+        {/* Multiple Translations */}
+        {(readingMode === "translation" || readingMode === "both") &&
+          verseTranslations.length > 0 && (
+            <View style={{ marginBottom: 12 }}>
+              {verseTranslations.map((translation, index) => (
+                <View
+                  key={translation.id}
+                  style={{
+                    backgroundColor: colors.primaryLight + "10",
+                    padding: 12,
+                    borderRadius: 8,
+                    marginBottom: index < verseTranslations.length - 1 ? 8 : 0,
+                    borderLeftWidth: 3,
+                    borderLeftColor: colors.primary,
+                  }}
+                >
+                  <Text
+                    style={{
+                      fontSize: 12,
+                      color: colors.primary,
+                      fontWeight: "600",
+                      marginBottom: 4,
+                    }}
+                  >
+                    {translation.name}
+                  </Text>
+                  <Text
+                    style={[
+                      currentLanguage === "bn"
+                        ? getBengaliTextStyle()
+                        : getTextStyle("body"),
+                      {
+                        lineHeight: 24,
+                        color: colors.text,
+                      },
+                    ]}
+                  >
+                    {translation.text}
+                  </Text>
+                </View>
+              ))}
+            </View>
+          )}
       </View>
     );
   };
@@ -553,7 +505,7 @@ Shared from Al-Quran App`;
             alignItems: "center",
             padding: 8,
           }}
-          onPress={() => setShowTranslations(true)}
+          onPress={() => setShowTranslationSelector(true)}
         >
           <Ionicons name="language" size={24} color={colors.textSecondary} />
           <Text
@@ -568,7 +520,7 @@ Shared from Al-Quran App`;
             alignItems: "center",
             padding: 8,
           }}
-          onPress={() => setShowTafsir(true)}
+          onPress={() => setShowTafsirSelector(true)}
         >
           <MaterialIcons name="school" size={24} color={colors.textSecondary} />
           <Text
@@ -583,496 +535,17 @@ Shared from Al-Quran App`;
             alignItems: "center",
             padding: 8,
           }}
-          onPress={() => setShowSettings(true)}
+          onPress={() => setShowFontModal(true)}
         >
-          <Ionicons name="settings" size={24} color={colors.textSecondary} />
+          <Ionicons name="text" size={24} color={colors.textSecondary} />
           <Text
             style={{ color: colors.textSecondary, fontSize: 12, marginTop: 4 }}
           >
-            Settings
+            Font
           </Text>
         </TouchableOpacity>
       </View>
     </View>
-  );
-
-  const renderTranslationModal = () => (
-    <Modal
-      visible={showTranslations}
-      transparent={true}
-      animationType="slide"
-      onRequestClose={() => setShowTranslations(false)}
-    >
-      <View
-        style={{
-          flex: 1,
-          backgroundColor: "rgba(0,0,0,0.5)",
-          justifyContent: "flex-end",
-        }}
-      >
-        <View
-          style={{
-            backgroundColor: colors.surface,
-            borderTopLeftRadius: 20,
-            borderTopRightRadius: 20,
-            paddingTop: 20,
-            maxHeight: "70%",
-          }}
-        >
-          <View
-            style={{
-              flexDirection: "row",
-              alignItems: "center",
-              justifyContent: "space-between",
-              paddingHorizontal: 20,
-              paddingBottom: 20,
-              borderBottomWidth: 1,
-              borderBottomColor: colors.border,
-            }}
-          >
-            <Text
-              style={{
-                ...getTextStyle("title", "bold"),
-                color: colors.text,
-              }}
-            >
-              Select Translation
-            </Text>
-            <TouchableOpacity onPress={() => setShowTranslations(false)}>
-              <Ionicons name="close" size={24} color={colors.textSecondary} />
-            </TouchableOpacity>
-          </View>
-
-          <FlatList
-            data={translations}
-            keyExtractor={(item) => item.id}
-            renderItem={({ item }) => (
-              <TouchableOpacity
-                style={{
-                  flexDirection: "row",
-                  alignItems: "center",
-                  justifyContent: "space-between",
-                  paddingVertical: 16,
-                  paddingHorizontal: 20,
-                  backgroundColor:
-                    currentTranslation?.id === item.id
-                      ? colors.primaryLight + "20"
-                      : "transparent",
-                }}
-                onPress={() => {
-                  setCurrentTranslation(item);
-                  setShowTranslations(false);
-                }}
-              >
-                <Text
-                  style={{
-                    ...getTextStyle("subtitle", "medium"),
-                    color:
-                      currentTranslation?.id === item.id
-                        ? colors.primary
-                        : colors.text,
-                  }}
-                >
-                  {item.name}
-                </Text>
-                {currentTranslation?.id === item.id && (
-                  <Ionicons name="checkmark" size={20} color={colors.primary} />
-                )}
-              </TouchableOpacity>
-            )}
-          />
-        </View>
-      </View>
-    </Modal>
-  );
-
-  const renderTafsirModal = () => (
-    <Modal
-      visible={showTafsir}
-      transparent={true}
-      animationType="slide"
-      onRequestClose={() => setShowTafsir(false)}
-    >
-      <View
-        style={{
-          flex: 1,
-          backgroundColor: "rgba(0,0,0,0.5)",
-          justifyContent: "flex-end",
-        }}
-      >
-        <View
-          style={{
-            backgroundColor: colors.surface,
-            borderTopLeftRadius: 20,
-            borderTopRightRadius: 20,
-            paddingTop: 20,
-            maxHeight: "70%",
-          }}
-        >
-          <View
-            style={{
-              flexDirection: "row",
-              alignItems: "center",
-              justifyContent: "space-between",
-              paddingHorizontal: 20,
-              paddingBottom: 20,
-              borderBottomWidth: 1,
-              borderBottomColor: colors.border,
-            }}
-          >
-            <Text
-              style={{
-                ...getTextStyle("title", "bold"),
-                color: colors.text,
-              }}
-            >
-              Select Tafsir
-            </Text>
-            <TouchableOpacity onPress={() => setShowTafsir(false)}>
-              <Ionicons name="close" size={24} color={colors.textSecondary} />
-            </TouchableOpacity>
-          </View>
-
-          <FlatList
-            data={tafsir}
-            keyExtractor={(item) => item.id}
-            renderItem={({ item }) => (
-              <TouchableOpacity
-                style={{
-                  flexDirection: "row",
-                  alignItems: "center",
-                  justifyContent: "space-between",
-                  paddingVertical: 16,
-                  paddingHorizontal: 20,
-                  backgroundColor:
-                    currentTafsir?.id === item.id
-                      ? colors.primaryLight + "20"
-                      : "transparent",
-                }}
-                onPress={() => {
-                  setCurrentTafsir(item);
-                  setShowTafsir(false);
-                }}
-              >
-                <Text
-                  style={{
-                    ...getTextStyle("subtitle", "medium"),
-                    color:
-                      currentTafsir?.id === item.id
-                        ? colors.primary
-                        : colors.text,
-                  }}
-                >
-                  {item.name}
-                </Text>
-                {currentTafsir?.id === item.id && (
-                  <Ionicons name="checkmark" size={20} color={colors.primary} />
-                )}
-              </TouchableOpacity>
-            )}
-          />
-        </View>
-      </View>
-    </Modal>
-  );
-
-  const renderSettingsModal = () => (
-    <Modal
-      visible={showSettings}
-      animationType="slide"
-      transparent={true}
-      onRequestClose={() => setShowSettings(false)}
-    >
-      <View
-        style={{
-          flex: 1,
-          justifyContent: "flex-end",
-          backgroundColor: "rgba(0,0,0,0.5)",
-        }}
-      >
-        <View
-          style={{
-            backgroundColor: colors.surface,
-            borderTopLeftRadius: 20,
-            borderTopRightRadius: 20,
-            padding: 20,
-            maxHeight: "80%",
-          }}
-        >
-          <View
-            style={{
-              flexDirection: "row",
-              justifyContent: "space-between",
-              alignItems: "center",
-              marginBottom: 20,
-            }}
-          >
-            <Text
-              style={{
-                fontSize: 18,
-                fontWeight: "bold",
-                color: colors.text,
-                ...getTextStyle("title", "bold"),
-              }}
-            >
-              Reading Settings
-            </Text>
-            <TouchableOpacity onPress={() => setShowSettings(false)}>
-              <Ionicons name="close" size={24} color={colors.text} />
-            </TouchableOpacity>
-          </View>
-
-          <ScrollView showsVerticalScrollIndicator={false}>
-            {/* Reading Mode */}
-            <Text
-              style={{
-                fontSize: 16,
-                fontWeight: "600",
-                color: colors.text,
-                marginBottom: 12,
-                ...getTextStyle("subtitle", "bold"),
-              }}
-            >
-              Reading Mode
-            </Text>
-
-            {["translation", "tafsir", "both"].map((mode) => (
-              <TouchableOpacity
-                key={mode}
-                style={{
-                  flexDirection: "row",
-                  alignItems: "center",
-                  paddingVertical: 12,
-                  paddingHorizontal: 16,
-                  backgroundColor:
-                    readingMode === mode
-                      ? colors.primaryLight + "20"
-                      : "transparent",
-                  borderRadius: 8,
-                  marginBottom: 8,
-                }}
-                onPress={() => setReadingMode(mode)}
-              >
-                <Ionicons
-                  name={
-                    readingMode === mode
-                      ? "radio-button-on"
-                      : "radio-button-off"
-                  }
-                  size={20}
-                  color={
-                    readingMode === mode ? colors.primary : colors.textSecondary
-                  }
-                />
-                <Text
-                  style={{
-                    marginLeft: 12,
-                    color: readingMode === mode ? colors.primary : colors.text,
-                    ...getTextStyle("body"),
-                    textTransform: "capitalize",
-                  }}
-                >
-                  {mode === "both" ? "Translation & Tafsir" : mode}
-                </Text>
-              </TouchableOpacity>
-            ))}
-
-            {/* Font Family */}
-            <Text
-              style={{
-                fontSize: 16,
-                fontWeight: "600",
-                color: colors.text,
-                marginTop: 20,
-                marginBottom: 12,
-                ...getTextStyle("subtitle", "bold"),
-              }}
-            >
-              Arabic Font Family
-            </Text>
-
-            {Object.entries(fontFamilies).map(([key, font]) => (
-              <TouchableOpacity
-                key={key}
-                style={{
-                  flexDirection: "row",
-                  alignItems: "center",
-                  paddingVertical: 12,
-                  paddingHorizontal: 16,
-                  backgroundColor:
-                    fontFamily === key
-                      ? colors.primaryLight + "20"
-                      : "transparent",
-                  borderRadius: 8,
-                  marginBottom: 8,
-                }}
-                onPress={() => changeFontFamily(key)}
-              >
-                <Ionicons
-                  name={
-                    fontFamily === key ? "radio-button-on" : "radio-button-off"
-                  }
-                  size={20}
-                  color={
-                    fontFamily === key ? colors.primary : colors.textSecondary
-                  }
-                />
-                <Text
-                  style={{
-                    marginLeft: 12,
-                    color: fontFamily === key ? colors.primary : colors.text,
-                    ...getTextStyle("body"),
-                  }}
-                >
-                  {font.name}
-                </Text>
-              </TouchableOpacity>
-            ))}
-
-            {/* Font Size */}
-            <Text
-              style={{
-                fontSize: 16,
-                fontWeight: "600",
-                color: colors.text,
-                marginTop: 20,
-                marginBottom: 12,
-                ...getTextStyle("subtitle", "bold"),
-              }}
-            >
-              Font Size
-            </Text>
-
-            {Object.entries(fontSizes).map(([key, size]) => (
-              <TouchableOpacity
-                key={key}
-                style={{
-                  flexDirection: "row",
-                  alignItems: "center",
-                  paddingVertical: 12,
-                  paddingHorizontal: 16,
-                  backgroundColor:
-                    fontSize === key
-                      ? colors.primaryLight + "20"
-                      : "transparent",
-                  borderRadius: 8,
-                  marginBottom: 8,
-                }}
-                onPress={() => changeFontSize(key)}
-              >
-                <Ionicons
-                  name={
-                    fontSize === key ? "radio-button-on" : "radio-button-off"
-                  }
-                  size={20}
-                  color={
-                    fontSize === key ? colors.primary : colors.textSecondary
-                  }
-                />
-                <Text
-                  style={{
-                    marginLeft: 12,
-                    color: fontSize === key ? colors.primary : colors.text,
-                    ...getTextStyle("body"),
-                  }}
-                >
-                  {size.name}
-                </Text>
-              </TouchableOpacity>
-            ))}
-
-            {/* Current Translation */}
-            <Text
-              style={{
-                fontSize: 16,
-                fontWeight: "600",
-                color: colors.text,
-                marginTop: 20,
-                marginBottom: 12,
-                ...getTextStyle("subtitle", "bold"),
-              }}
-            >
-              Current Translation
-            </Text>
-
-            <TouchableOpacity
-              style={{
-                flexDirection: "row",
-                alignItems: "center",
-                justifyContent: "space-between",
-                paddingVertical: 12,
-                paddingHorizontal: 16,
-                backgroundColor: colors.primaryLight + "10",
-                borderRadius: 8,
-                marginBottom: 12,
-              }}
-              onPress={() => {
-                setShowSettings(false);
-                setShowTranslations(true);
-              }}
-            >
-              <Text
-                style={{
-                  color: colors.text,
-                  ...getTextStyle("body"),
-                }}
-              >
-                {currentTranslation?.name || "Select Translation"}
-              </Text>
-              <Ionicons
-                name="chevron-forward"
-                size={20}
-                color={colors.primary}
-              />
-            </TouchableOpacity>
-
-            {/* Current Tafsir */}
-            <Text
-              style={{
-                fontSize: 16,
-                fontWeight: "600",
-                color: colors.text,
-                marginBottom: 12,
-                ...getTextStyle("subtitle", "bold"),
-              }}
-            >
-              Current Tafsir
-            </Text>
-
-            <TouchableOpacity
-              style={{
-                flexDirection: "row",
-                alignItems: "center",
-                justifyContent: "space-between",
-                paddingVertical: 12,
-                paddingHorizontal: 16,
-                backgroundColor: colors.primaryLight + "10",
-                borderRadius: 8,
-                marginBottom: 20,
-              }}
-              onPress={() => {
-                setShowSettings(false);
-                setShowTafsir(true);
-              }}
-            >
-              <Text
-                style={{
-                  color: colors.text,
-                  ...getTextStyle("body"),
-                }}
-              >
-                {currentTafsir?.name || "Select Tafsir"}
-              </Text>
-              <Ionicons
-                name="chevron-forward"
-                size={20}
-                color={colors.primary}
-              />
-            </TouchableOpacity>
-          </ScrollView>
-        </View>
-      </View>
-    </Modal>
   );
 
   const renderVerseActionsModal = () => (
@@ -1240,14 +713,146 @@ Shared from Al-Quran App`;
       >
         {renderSuraHeader()}
 
+        {/* Controls Bar */}
+        <View
+          style={{
+            flexDirection: "row",
+            justifyContent: "space-between",
+            alignItems: "center",
+            paddingHorizontal: 16,
+            paddingVertical: 12,
+            backgroundColor: colors.surface,
+            borderBottomWidth: 1,
+            borderBottomColor: colors.border,
+            marginBottom: 8,
+          }}
+        >
+          <View style={{ flexDirection: "row", gap: 8 }}>
+            {/* Play Sura Button */}
+            <TouchableOpacity
+              style={{
+                flexDirection: "row",
+                alignItems: "center",
+                backgroundColor: colors.primary,
+                paddingHorizontal: 16,
+                paddingVertical: 8,
+                borderRadius: 20,
+              }}
+              onPress={handlePlaySura}
+            >
+              <Ionicons name="play" size={16} color="white" />
+              <Text
+                style={{
+                  color: "white",
+                  marginLeft: 6,
+                  ...getTextStyle("caption", "medium"),
+                }}
+              >
+                {t("playSura")}
+              </Text>
+            </TouchableOpacity>
+
+            {/* Translations Button */}
+            <TouchableOpacity
+              style={{
+                flexDirection: "row",
+                alignItems: "center",
+                backgroundColor: colors.primaryLight + "20",
+                paddingHorizontal: 12,
+                paddingVertical: 8,
+                borderRadius: 16,
+              }}
+              onPress={() => setShowTranslationSelector(true)}
+            >
+              <Ionicons name="language" size={16} color={colors.primary} />
+              <Text
+                style={{
+                  color: colors.primary,
+                  marginLeft: 4,
+                  ...getTextStyle("caption", "medium"),
+                }}
+              >
+                {selectedTranslations.length}
+              </Text>
+            </TouchableOpacity>
+
+            {/* Tafsir Button */}
+            <TouchableOpacity
+              style={{
+                flexDirection: "row",
+                alignItems: "center",
+                backgroundColor: colors.warning + "20",
+                paddingHorizontal: 12,
+                paddingVertical: 8,
+                borderRadius: 16,
+              }}
+              onPress={() => setShowTafsirSelector(true)}
+            >
+              <Ionicons name="book-outline" size={16} color={colors.warning} />
+              <Text
+                style={{
+                  color: colors.warning,
+                  marginLeft: 4,
+                  ...getTextStyle("caption", "medium"),
+                }}
+              >
+                {selectedTafsir.length}
+              </Text>
+            </TouchableOpacity>
+          </View>
+
+          {/* Font Settings Button */}
+          <TouchableOpacity
+            style={{
+              padding: 8,
+              borderRadius: 16,
+              backgroundColor: colors.primaryLight + "20",
+            }}
+            onPress={() => setShowFontModal(true)}
+          >
+            <Ionicons name="text" size={20} color={colors.primary} />
+          </TouchableOpacity>
+        </View>
+
         {verses.map((verse) => renderVerse(verse))}
 
         <View style={{ height: 100 }} />
       </ScrollView>
 
-      {renderTranslationModal()}
-      {renderTafsirModal()}
-      {renderSettingsModal()}
+      {/* Multiple Translation Selector */}
+      <MultipleTranslationSelector
+        visible={showTranslationSelector}
+        onClose={() => setShowTranslationSelector(false)}
+        selectedTranslations={selectedTranslations}
+        onSelectionChange={setSelectedTranslations}
+        availableTranslations={availableTranslations}
+      />
+
+      {/* Multiple Tafsir Selector */}
+      <MultipleTafsirSelector
+        visible={showTafsirSelector}
+        onClose={() => setShowTafsirSelector(false)}
+        selectedTafsir={selectedTafsir}
+        onSelectionChange={setSelectedTafsir}
+        availableTafsir={availableTafsir}
+      />
+
+      {/* Tafsir Modal */}
+      <TafsirModal
+        visible={showTafsirModal}
+        onClose={() => setShowTafsirModal(false)}
+        suraId={suraId}
+        ayahNumber={selectedVerseForTafsir?.ayahNumber}
+        selectedTafsir={selectedTafsir}
+        suraName={sura?.nameSimple}
+      />
+
+      {/* Font Selection Modal */}
+      <FontSelectionModal
+        visible={showFontModal}
+        onClose={() => setShowFontModal(false)}
+      />
+
       {renderVerseActionsModal()}
     </View>
   );

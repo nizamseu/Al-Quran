@@ -173,17 +173,23 @@ export const AudioProvider = ({ children }) => {
       await stopPlayback();
 
       // Get recitation data
+      // For ayah-by-ayah, we need to use appropriate reciters
+      const ayahReciters = ["abdul-basit", "yasser-al-dosari"];
+      const reciterToUse = ayahReciters.includes(currentReciter)
+        ? currentReciter
+        : "abdul-basit"; // Default to abdul-basit for ayah recitation
+
       const recitationData = await dataService.getVerseRecitation(
         suraId,
         ayahNumber,
-        currentReciter
+        reciterToUse
       );
       if (!recitationData) {
         throw new Error("Verse recitation data not found");
       }
 
       // Check if audio is downloaded
-      const audioKey = `ayah_${suraId}_${ayahNumber}_${currentReciter}`;
+      const audioKey = `ayah_${suraId}_${ayahNumber}_${reciterToUse}`;
       const audioUri = downloadedAudios[audioKey] || recitationData.audio_url;
 
       // Create and load sound
@@ -199,7 +205,7 @@ export const AudioProvider = ({ children }) => {
         suraId: parseInt(suraId),
         ayahNumber: parseInt(ayahNumber),
         suraName,
-        reciter: currentReciter,
+        reciter: reciterToUse,
         audioUrl: audioUri,
         segments: recitationData.segments,
       });
@@ -448,6 +454,21 @@ export const AudioProvider = ({ children }) => {
     await AsyncStorage.setItem("audio_reciter", newReciter);
   };
 
+  const getAvailableReciters = () => {
+    const reciterData = dataService.getAvailableReciters();
+    // Flatten the reciters from both categories
+    const allReciters = [
+      ...(reciterData["ayah-by-ayah"] || []),
+      ...(reciterData["sura-by-sura"] || []),
+    ];
+    // Remove duplicates based on id
+    const uniqueReciters = allReciters.filter(
+      (reciter, index, self) =>
+        index === self.findIndex((r) => r.id === reciter.id)
+    );
+    return uniqueReciters;
+  };
+
   const changePlaybackMode = async (newMode) => {
     setPlaybackMode(newMode);
     await AsyncStorage.setItem("audio_playback_mode", newMode);
@@ -490,7 +511,7 @@ export const AudioProvider = ({ children }) => {
     changeRepeatMode,
 
     // Helpers
-    getAvailableReciters: () => dataService.getAvailableReciters(),
+    getAvailableReciters,
     formatTime: (milliseconds) => {
       const totalSeconds = Math.floor(milliseconds / 1000);
       const minutes = Math.floor(totalSeconds / 60);

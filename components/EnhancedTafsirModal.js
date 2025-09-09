@@ -10,7 +10,7 @@ import {
   Dimensions,
   Share,
   Clipboard,
-  FlatList,
+  ActivityIndicator,
 } from "react-native";
 import { Ionicons, MaterialIcons } from "@expo/vector-icons";
 import { useTheme } from "../contexts/ThemeContext";
@@ -44,7 +44,7 @@ const TafsirModal = ({
   useEffect(() => {
     if (
       visible &&
-      (selectedTafsir.length > 0 || selectedTranslations.length > 0)
+      (selectedTafsir?.length > 0 || selectedTranslations?.length > 0)
     ) {
       loadTafsirData();
       loadTranslationData();
@@ -56,7 +56,7 @@ const TafsirModal = ({
     try {
       const tafsirResults = [];
 
-      for (const tafsir of selectedTafsir) {
+      for (const tafsir of selectedTafsir || []) {
         const verseKey = `${suraId}:${ayahNumber}`;
         const tafsirText = dataService.getTafsir(
           verseKey,
@@ -85,7 +85,7 @@ const TafsirModal = ({
     try {
       const translationResults = [];
 
-      for (const translation of selectedTranslations) {
+      for (const translation of selectedTranslations || []) {
         const verseKey = `${suraId}:${ayahNumber}`;
         const translationText = dataService.getTranslation(
           verseKey,
@@ -630,6 +630,7 @@ ${content}`;
 
           {loading ? (
             <View style={styles.loadingContainer}>
+              <ActivityIndicator size="large" color={colors.primary} />
               <Text style={styles.loadingText}>Loading...</Text>
             </View>
           ) : (

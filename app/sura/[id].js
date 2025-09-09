@@ -12,6 +12,7 @@ import {
   Share,
   StatusBar,
 } from "react-native";
+import Clipboard from "@react-native-clipboard/clipboard";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { Ionicons, MaterialIcons } from "@expo/vector-icons";
 
@@ -28,8 +29,9 @@ import dataService from "../../services/dataService";
 // Component Imports
 import MultipleTranslationSelector from "../../components/MultipleTranslationSelector";
 import MultipleTafsirSelector from "../../components/MultipleTafsirSelector";
-import TafsirModal from "../../components/TafsirModal";
+import EnhancedTafsirModal from "../../components/EnhancedTafsirModal";
 import FontSelectionModal from "../../components/FontSelectionModal";
+import EnhancedAudioPlayer from "../../components/EnhancedAudioPlayer";
 
 const { width: screenWidth } = Dimensions.get("window");
 
@@ -65,6 +67,9 @@ export default function SuraDetailsScreen() {
     playAyah,
     currentTrack,
     isPlaying: audioIsPlaying,
+    currentReciter,
+    changeReciter,
+    getAvailableReciters,
   } = useAudio();
 
   // State
@@ -87,17 +92,31 @@ export default function SuraDetailsScreen() {
   const [readingMode, setReadingMode] = useState(
     settings.readingMode || "translation"
   );
+  const [showTranslationInline, setShowTranslationInline] = useState(true);
+  const [showTafsirInline, setShowTafsirInline] = useState(false);
+  const [showReciterSelector, setShowReciterSelector] = useState(false);
+  const [availableReciters, setAvailableReciters] = useState([]);
 
   const suraId = parseInt(id);
 
   useEffect(() => {
     loadSuraData();
+    loadAvailableReciters();
     return () => {
       if (soundRef.current) {
         soundRef.current.unloadAsync();
       }
     };
   }, [suraId, currentLanguage]);
+
+  const loadAvailableReciters = () => {
+    try {
+      const reciters = getAvailableReciters();
+      setAvailableReciters(reciters);
+    } catch (error) {
+      console.error("Error loading reciters:", error);
+    }
+  };
 
   useEffect(() => {
     // Update last read when component mounts
@@ -182,16 +201,23 @@ export default function SuraDetailsScreen() {
 
   const handleShareVerse = async (verse) => {
     try {
-      const translationText = currentTranslation
-        ? dataService.getTranslation(
+      // Get all selected translations for this verse
+      const translationTexts = selectedTranslations
+        .map((translation) => {
+          const text = dataService.getTranslation(
             verse.verseKey,
             currentLanguage,
-            currentTranslation.id
-          )
-        : "";
+            translation.id
+          );
+          return text ? `${translation.name}: ${text}` : null;
+        })
+        .filter(Boolean);
 
       const message = `${sura.nameSimple} (${suraId}:${verse.ayahNumber})
-${verse.text}${translationText ? "\n\n" + translationText : ""}
+
+Arabic: ${verse.text}
+
+${translationTexts.join("\n\n")}
 
 Shared from Al-Quran App`;
 
@@ -204,8 +230,31 @@ Shared from Al-Quran App`;
   };
 
   const handleCopyVerse = async (verse) => {
-    // Implementation for copying verse to clipboard
-    Alert.alert("Copied", "Verse copied to clipboard");
+    try {
+      // Get all selected translations for this verse
+      const translationTexts = selectedTranslations
+        .map((translation) => {
+          const text = dataService.getTranslation(
+            verse.verseKey,
+            currentLanguage,
+            translation.id
+          );
+          return text ? `${translation.name}: ${text}` : null;
+        })
+        .filter(Boolean);
+
+      const message = `${sura.nameSimple} (${suraId}:${verse.ayahNumber})
+
+Arabic: ${verse.text}
+
+${translationTexts.join("\n\n")}`;
+
+      await Clipboard.setString(message);
+      Alert.alert("Copied", "Verse copied to clipboard");
+    } catch (error) {
+      console.error("Error copying verse:", error);
+      Alert.alert("Error", "Failed to copy verse");
+    }
   };
 
   const renderVerse = (verse) => {
@@ -221,10 +270,31 @@ Shared from Al-Quran App`;
       }))
       .filter((t) => t.text);
 
+    // Get tafsir for this verse if inline display is enabled
+    const verseTafsir = showTafsirInline
+      ? selectedTafsir
+          .map((tafsir) => ({
+            ...tafsir,
+            text: dataService.getTafsir(
+              verse.verseKey,
+              currentLanguage,
+              tafsir.id
+            ),
+          }))
+          .filter((t) => t.text)
+      : [];
+
     // Check if any tafsir is available for this verse
     const hasTafsir = selectedTafsir.some((tafsir) =>
       dataService.getTafsir(verse.verseKey, currentLanguage, tafsir.id)
     );
+
+    const isCurrentlyPlaying =
+      currentTrack &&
+      currentTrack.type === "ayah" &&
+      currentTrack.suraId === suraId &&
+      currentTrack.ayahNumber === verse.ayahNumber &&
+      audioIsPlaying;
 
     return (
       <View
@@ -271,16 +341,46 @@ Shared from Al-Quran App`;
           </View>
 
           <View style={{ flexDirection: "row", gap: 8 }}>
-            {/* Play Button */}
+            {/* Play Button with visual feedback */}
+            <TouchableOpacity
+              style={{
+                padding: 8,
+                borderRadius: 20,
+                backgroundColor: isCurrentlyPlaying
+                  ? colors.success + "40"
+                  : colors.primaryLight + "20",
+              }}
+              onPress={() => handlePlayVerse(verse.ayahNumber)}
+            >
+              <Ionicons
+                name={isCurrentlyPlaying ? "pause" : "play"}
+                size={20}
+                color={isCurrentlyPlaying ? colors.success : colors.primary}
+              />
+            </TouchableOpacity>
+
+            {/* Copy Button */}
             <TouchableOpacity
               style={{
                 padding: 8,
                 borderRadius: 20,
                 backgroundColor: colors.primaryLight + "20",
               }}
-              onPress={() => handlePlayVerse(verse.ayahNumber)}
+              onPress={() => handleCopyVerse(verse)}
             >
-              <Ionicons name="play" size={20} color={colors.primary} />
+              <Ionicons name="copy-outline" size={20} color={colors.primary} />
+            </TouchableOpacity>
+
+            {/* Share Button */}
+            <TouchableOpacity
+              style={{
+                padding: 8,
+                borderRadius: 20,
+                backgroundColor: colors.primaryLight + "20",
+              }}
+              onPress={() => handleShareVerse(verse)}
+            >
+              <Ionicons name="share-outline" size={20} color={colors.primary} />
             </TouchableOpacity>
 
             {/* Tafsir Button */}
@@ -333,7 +433,8 @@ Shared from Al-Quran App`;
         </Text>
 
         {/* Multiple Translations */}
-        {(readingMode === "translation" || readingMode === "both") &&
+        {showTranslationInline &&
+          (readingMode === "translation" || readingMode === "both") &&
           verseTranslations.length > 0 && (
             <View style={{ marginBottom: 12 }}>
               {verseTranslations.map((translation, index) => (
@@ -348,16 +449,54 @@ Shared from Al-Quran App`;
                     borderLeftColor: colors.primary,
                   }}
                 >
-                  <Text
+                  <View
                     style={{
-                      fontSize: 12,
-                      color: colors.primary,
-                      fontWeight: "600",
+                      flexDirection: "row",
+                      justifyContent: "space-between",
+                      alignItems: "center",
                       marginBottom: 4,
                     }}
                   >
-                    {translation.name}
-                  </Text>
+                    <Text
+                      style={{
+                        fontSize: 12,
+                        color: colors.primary,
+                        fontWeight: "600",
+                      }}
+                    >
+                      {translation.name}
+                    </Text>
+                    <View style={{ flexDirection: "row", gap: 4 }}>
+                      <TouchableOpacity
+                        onPress={() => handleCopyVerse(verse)}
+                        style={{
+                          padding: 4,
+                          borderRadius: 8,
+                          backgroundColor: colors.primaryLight + "20",
+                        }}
+                      >
+                        <Ionicons
+                          name="copy-outline"
+                          size={14}
+                          color={colors.primary}
+                        />
+                      </TouchableOpacity>
+                      <TouchableOpacity
+                        onPress={() => handleShareVerse(verse)}
+                        style={{
+                          padding: 4,
+                          borderRadius: 8,
+                          backgroundColor: colors.primaryLight + "20",
+                        }}
+                      >
+                        <Ionicons
+                          name="share-outline"
+                          size={14}
+                          color={colors.primary}
+                        />
+                      </TouchableOpacity>
+                    </View>
+                  </View>
                   <Text
                     style={[
                       currentLanguage === "bn"
@@ -375,6 +514,103 @@ Shared from Al-Quran App`;
               ))}
             </View>
           )}
+
+        {/* Inline Tafsir */}
+        {showTafsirInline && verseTafsir.length > 0 && (
+          <View style={{ marginBottom: 12 }}>
+            {verseTafsir.map((tafsir, index) => (
+              <View
+                key={tafsir.id}
+                style={{
+                  backgroundColor: colors.warning + "10",
+                  padding: 12,
+                  borderRadius: 8,
+                  marginBottom: index < verseTafsir.length - 1 ? 8 : 0,
+                  borderLeftWidth: 3,
+                  borderLeftColor: colors.warning,
+                }}
+              >
+                <View
+                  style={{
+                    flexDirection: "row",
+                    justifyContent: "space-between",
+                    alignItems: "center",
+                    marginBottom: 4,
+                  }}
+                >
+                  <Text
+                    style={{
+                      fontSize: 12,
+                      color: colors.warning,
+                      fontWeight: "600",
+                    }}
+                  >
+                    {tafsir.name}
+                  </Text>
+                  <View style={{ flexDirection: "row", gap: 4 }}>
+                    <TouchableOpacity
+                      onPress={() => {
+                        const message = `${sura.nameSimple} (${suraId}:${verse.ayahNumber})
+                        
+TAFSIR: ${tafsir.name}
+${tafsir.text}`;
+                        Clipboard.setString(message);
+                        Alert.alert("Copied", "Tafsir copied to clipboard");
+                      }}
+                      style={{
+                        padding: 4,
+                        borderRadius: 8,
+                        backgroundColor: colors.warning + "20",
+                      }}
+                    >
+                      <Ionicons
+                        name="copy-outline"
+                        size={14}
+                        color={colors.warning}
+                      />
+                    </TouchableOpacity>
+                    <TouchableOpacity
+                      onPress={() => {
+                        const message = `${sura.nameSimple} (${suraId}:${verse.ayahNumber})
+                        
+TAFSIR: ${tafsir.name}
+${tafsir.text}
+
+Shared from Al-Quran App`;
+                        Share.share({ message });
+                      }}
+                      style={{
+                        padding: 4,
+                        borderRadius: 8,
+                        backgroundColor: colors.warning + "20",
+                      }}
+                    >
+                      <Ionicons
+                        name="share-outline"
+                        size={14}
+                        color={colors.warning}
+                      />
+                    </TouchableOpacity>
+                  </View>
+                </View>
+                <Text
+                  style={[
+                    currentLanguage === "bn"
+                      ? getBengaliTextStyle()
+                      : getTextStyle("body"),
+                    {
+                      lineHeight: 22,
+                      color: colors.text,
+                      fontSize: 14,
+                    },
+                  ]}
+                >
+                  {tafsir.text}
+                </Text>
+              </View>
+            ))}
+          </View>
+        )}
       </View>
     );
   };
@@ -799,6 +1035,30 @@ Shared from Al-Quran App`;
                 {selectedTafsir.length}
               </Text>
             </TouchableOpacity>
+
+            {/* Reciter Button */}
+            <TouchableOpacity
+              style={{
+                flexDirection: "row",
+                alignItems: "center",
+                backgroundColor: colors.success + "20",
+                paddingHorizontal: 12,
+                paddingVertical: 8,
+                borderRadius: 16,
+              }}
+              onPress={() => setShowReciterSelector(true)}
+            >
+              <Ionicons name="person" size={16} color={colors.success} />
+              <Text
+                style={{
+                  color: colors.success,
+                  marginLeft: 4,
+                  ...getTextStyle("caption", "medium"),
+                }}
+              >
+                Reciter
+              </Text>
+            </TouchableOpacity>
           </View>
 
           {/* Font Settings Button */}
@@ -811,6 +1071,85 @@ Shared from Al-Quran App`;
             onPress={() => setShowFontModal(true)}
           >
             <Ionicons name="text" size={20} color={colors.primary} />
+          </TouchableOpacity>
+        </View>
+
+        {/* Inline Display Toggles */}
+        <View
+          style={{
+            flexDirection: "row",
+            justifyContent: "space-around",
+            alignItems: "center",
+            paddingHorizontal: 16,
+            paddingVertical: 8,
+            backgroundColor: colors.surface,
+            borderBottomWidth: 1,
+            borderBottomColor: colors.border,
+            marginBottom: 8,
+          }}
+        >
+          <TouchableOpacity
+            style={{
+              flexDirection: "row",
+              alignItems: "center",
+              paddingHorizontal: 12,
+              paddingVertical: 6,
+              borderRadius: 16,
+              backgroundColor: showTranslationInline
+                ? colors.primary + "20"
+                : colors.border + "20",
+            }}
+            onPress={() => setShowTranslationInline(!showTranslationInline)}
+          >
+            <Ionicons
+              name={
+                showTranslationInline ? "checkmark-circle" : "radio-button-off"
+              }
+              size={16}
+              color={
+                showTranslationInline ? colors.primary : colors.textSecondary
+              }
+            />
+            <Text
+              style={{
+                marginLeft: 6,
+                color: showTranslationInline
+                  ? colors.primary
+                  : colors.textSecondary,
+                ...getTextStyle("caption", "medium"),
+              }}
+            >
+              Show Translations
+            </Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={{
+              flexDirection: "row",
+              alignItems: "center",
+              paddingHorizontal: 12,
+              paddingVertical: 6,
+              borderRadius: 16,
+              backgroundColor: showTafsirInline
+                ? colors.warning + "20"
+                : colors.border + "20",
+            }}
+            onPress={() => setShowTafsirInline(!showTafsirInline)}
+          >
+            <Ionicons
+              name={showTafsirInline ? "checkmark-circle" : "radio-button-off"}
+              size={16}
+              color={showTafsirInline ? colors.warning : colors.textSecondary}
+            />
+            <Text
+              style={{
+                marginLeft: 6,
+                color: showTafsirInline ? colors.warning : colors.textSecondary,
+                ...getTextStyle("caption", "medium"),
+              }}
+            >
+              Show Tafsir
+            </Text>
           </TouchableOpacity>
         </View>
 
@@ -837,13 +1176,14 @@ Shared from Al-Quran App`;
         availableTafsir={availableTafsir}
       />
 
-      {/* Tafsir Modal */}
-      <TafsirModal
+      {/* Enhanced Tafsir Modal */}
+      <EnhancedTafsirModal
         visible={showTafsirModal}
         onClose={() => setShowTafsirModal(false)}
         suraId={suraId}
         ayahNumber={selectedVerseForTafsir?.ayahNumber}
         selectedTafsir={selectedTafsir}
+        selectedTranslations={selectedTranslations}
         suraName={sura?.nameSimple}
       />
 
@@ -854,6 +1194,107 @@ Shared from Al-Quran App`;
       />
 
       {renderVerseActionsModal()}
+
+      {/* Reciter Selector Modal */}
+      <Modal
+        visible={showReciterSelector}
+        transparent={true}
+        animationType="slide"
+        onRequestClose={() => setShowReciterSelector(false)}
+      >
+        <View
+          style={{
+            flex: 1,
+            backgroundColor: "rgba(0,0,0,0.5)",
+            justifyContent: "flex-end",
+          }}
+        >
+          <View
+            style={{
+              backgroundColor: colors.surface,
+              borderTopLeftRadius: 20,
+              borderTopRightRadius: 20,
+              maxHeight: "70%",
+            }}
+          >
+            <View
+              style={{
+                flexDirection: "row",
+                alignItems: "center",
+                justifyContent: "space-between",
+                padding: 20,
+                borderBottomWidth: 1,
+                borderBottomColor: colors.border,
+              }}
+            >
+              <Text
+                style={{
+                  ...getTextStyle("title", "bold"),
+                  color: colors.text,
+                }}
+              >
+                Select Reciter
+              </Text>
+              <TouchableOpacity onPress={() => setShowReciterSelector(false)}>
+                <Ionicons name="close" size={24} color={colors.textSecondary} />
+              </TouchableOpacity>
+            </View>
+
+            <FlatList
+              data={availableReciters}
+              keyExtractor={(item) => item.id}
+              renderItem={({ item }) => (
+                <TouchableOpacity
+                  style={{
+                    flexDirection: "row",
+                    alignItems: "center",
+                    justifyContent: "space-between",
+                    paddingHorizontal: 20,
+                    paddingVertical: 16,
+                    borderBottomWidth: 1,
+                    borderBottomColor: colors.border + "30",
+                  }}
+                  onPress={() => {
+                    changeReciter(item.id);
+                    setShowReciterSelector(false);
+                    Alert.alert("Reciter Changed", `Now using ${item.name}`);
+                  }}
+                >
+                  <View>
+                    <Text
+                      style={{
+                        ...getTextStyle("body", "medium"),
+                        color: colors.text,
+                      }}
+                    >
+                      {item.name}
+                    </Text>
+                    <Text
+                      style={{
+                        ...getTextStyle("caption"),
+                        color: colors.textSecondary,
+                        marginTop: 2,
+                      }}
+                    >
+                      {item.style}
+                    </Text>
+                  </View>
+                  {currentReciter === item.id && (
+                    <Ionicons
+                      name="checkmark"
+                      size={20}
+                      color={colors.success}
+                    />
+                  )}
+                </TouchableOpacity>
+              )}
+            />
+          </View>
+        </View>
+      </Modal>
+
+      {/* Enhanced Audio Player */}
+      <EnhancedAudioPlayer />
     </View>
   );
 }

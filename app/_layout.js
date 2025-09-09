@@ -31,7 +31,7 @@ function CustomDrawerContent(props) {
 
     const routes = [
         {
-            name: "index",
+            name: "(tabs)",
             label: t("navigation.home"),
             icon: "home",
             iconType: "Ionicons",

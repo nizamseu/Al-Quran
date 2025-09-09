@@ -72,10 +72,16 @@ const EnhancedAudioPlayer = () => {
 
   const loadAvailableReciters = async () => {
     try {
-      const reciters = await dataService.getAvailableReciters();
-      setAvailableReciters(reciters);
+      const recitersData = await dataService.getAvailableReciters();
+      // Combine both ayah-by-ayah and sura-by-sura reciters into a single array
+      const allReciters = [
+        ...(recitersData["ayah-by-ayah"] || []),
+        ...(recitersData["sura-by-sura"] || []),
+      ];
+      setAvailableReciters(allReciters);
     } catch (error) {
       console.error("Error loading reciters:", error);
+      setAvailableReciters([]); // Ensure it's always an array
     }
   };
 
@@ -285,8 +291,9 @@ const EnhancedAudioPlayer = () => {
               : `${currentTrack.suraName} - Ayah ${currentTrack.ayahNumber}`}
           </Text>
           <Text style={styles.expandedTrackSubtitle}>
-            {availableReciters.find((r) => r.id === currentReciter)?.name ||
-              currentReciter}
+            {(Array.isArray(availableReciters)
+              ? availableReciters.find((r) => r.id === currentReciter)?.name
+              : null) || currentReciter}
           </Text>
         </View>
 
@@ -401,7 +408,7 @@ const EnhancedAudioPlayer = () => {
           </View>
 
           <FlatList
-            data={availableReciters}
+            data={Array.isArray(availableReciters) ? availableReciters : []}
             keyExtractor={(item) => item.id}
             renderItem={({ item }) => (
               <TouchableOpacity

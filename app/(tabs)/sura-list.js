@@ -39,9 +39,7 @@ export default function SuraScreen() {
   const [sortBy, setSortBy] = useState("chronological"); // chronological, alphabetical, verses
   const [filterBy, setFilterBy] = useState("all"); // all, meccan, medinan
   const [searchSuggestions, setSearchSuggestions] = useState([]);
-  console.log("====================================");
-  console.log("suraList", suraList);
-  console.log("====================================");
+
   useEffect(() => {
     loadSuraData();
   }, []);

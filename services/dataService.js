@@ -226,17 +226,22 @@ class DataService {
     if (!tafsirData) return null;
 
     const tafsir = tafsirData[verseKey];
-    return tafsir ? tafsir.t : null;
+    // Handle both 't' and 'text' properties (different tafsir files use different formats)
+    return tafsir ? tafsir.t || tafsir.text : null;
   }
 
   // Get available translators for a language
   getTranslators(language) {
-    return Object.keys(this.translations[language] || {});
+    const translators = Object.keys(this.translations[language] || {});
+    console.log(`Available translators for ${language}:`, translators);
+    return translators;
   }
 
   // Get available tafsir sources for a language
   getTafsirSources(language) {
-    return Object.keys(this.tafsir[language] || {});
+    const sources = Object.keys(this.tafsir[language] || {});
+    console.log(`Available tafsir sources for ${language}:`, sources);
+    return sources;
   }
 
   // Get translator display name

@@ -14,6 +14,7 @@ const Layout = () => {
       <Stack.Screen
         name="[id]"
         options={{
+          title: t("sura.details"),
           headerShown: true,
           //   headerShown: false,
           headerTitleAlign: "center",

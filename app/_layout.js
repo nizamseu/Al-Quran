@@ -37,6 +37,12 @@ function CustomDrawerContent(props) {
       iconType: "Ionicons",
     },
     {
+      name: "mushaf",
+      label: "Mushaf",
+      icon: "book",
+      iconType: "MaterialIcons",
+    },
+    {
       name: "sura-list",
       label: t("navigation.suraList"),
       icon: "list",

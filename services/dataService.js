@@ -521,6 +521,55 @@ class DataService {
       hasRange: false,
     };
   }
+
+  // Get ayah text by sura and ayah number
+  getAyahText(suraId, ayahNumber) {
+    const verseKey = `${suraId}:${ayahNumber}`;
+    const ayah = Object.values(ayahData).find((a) => a.verse_key === verseKey);
+    return ayah ? ayah.text : null;
+  }
+
+  // Get ayah translation by sura, ayah number and translator
+  getAyahTranslation(suraId, ayahNumber, translatorId) {
+    return this.getTranslation(suraId, ayahNumber, translatorId);
+  }
+
+  // Get sura name by ID
+  getSuraName(suraId) {
+    const sura = this.getSuraById(suraId);
+    return sura ? sura.name : null;
+  }
+
+  // Get bookmarks from AsyncStorage
+  async getBookmarks() {
+    try {
+      const AsyncStorage = await import(
+        "@react-native-async-storage/async-storage"
+      );
+      const bookmarksJson = await AsyncStorage.default.getItem("bookmarks");
+      return bookmarksJson ? JSON.parse(bookmarksJson) : [];
+    } catch (error) {
+      console.error("Error loading bookmarks:", error);
+      return [];
+    }
+  }
+
+  // Save bookmarks to AsyncStorage
+  async saveBookmarks(bookmarks) {
+    try {
+      const AsyncStorage = await import(
+        "@react-native-async-storage/async-storage"
+      );
+      await AsyncStorage.default.setItem(
+        "bookmarks",
+        JSON.stringify(bookmarks)
+      );
+      return true;
+    } catch (error) {
+      console.error("Error saving bookmarks:", error);
+      return false;
+    }
+  }
 }
 
 export default new DataService();

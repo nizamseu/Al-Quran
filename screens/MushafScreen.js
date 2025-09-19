@@ -14,7 +14,7 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Ionicons, MaterialIcons } from "@expo/vector-icons";
-import { useRouter } from "expo-router";
+import { useRouter, useLocalSearchParams } from "expo-router";
 import { useTheme } from "../contexts/ThemeContext";
 import { useFont } from "../contexts/FontContext";
 import { useLanguage } from "../contexts/LanguageContext";
@@ -25,8 +25,16 @@ import { getTotalPages, getPageRange } from "../utils/mushafPages";
 
 const { width, height } = Dimensions.get("window");
 
-const MushafScreen = ({ route }) => {
-  const { pageNumber: initialPage = 1 } = route?.params || {};
+const MushafScreen = () => {
+  const searchParams = useLocalSearchParams();
+  const initialPageParam = searchParams.pageNumber || searchParams.page || "1";
+  const initialPage = parseInt(initialPageParam, 10) || 1;
+
+  console.log("MushafScreen params:", {
+    searchParams,
+    initialPageParam,
+    initialPage,
+  });
 
   const router = useRouter();
   const { colors, isDark } = useTheme();
@@ -35,6 +43,8 @@ const MushafScreen = ({ route }) => {
   const { playAyah, isPlaying, pauseAudio, resumeAudio } = useAudio();
 
   const [currentPage, setCurrentPage] = useState(initialPage);
+  console.log("MushafScreen currentPage state:", currentPage);
+
   const [showControls, setShowControls] = useState(true);
   const [showFilters, setShowFilters] = useState(false);
   const [showPageNavigator, setShowPageNavigator] = useState(false);
@@ -51,6 +61,13 @@ const MushafScreen = ({ route }) => {
   // Get dynamic page range
   const { min: minPage, max: maxPage } = getPageRange();
   const totalPages = getTotalPages();
+
+  console.log("Page configuration:", {
+    currentPage,
+    minPage,
+    maxPage,
+    totalPages,
+  });
 
   // Para/Juz data (30 paras)
   const paraList = Array.from({ length: 30 }, (_, i) => ({
@@ -140,14 +157,226 @@ const MushafScreen = ({ route }) => {
   };
 
   const handleAudioToggle = async () => {
-    if (isPlaying) {
-      await pauseAudio();
-    } else {
-      Alert.alert(
-        "Audio",
-        "Please implement page-to-ayah mapping for audio playback"
-      );
+    try {
+      if (isPlaying) {
+        await pauseAudio();
+      } else {
+        // For Mushaf pages, we need to map page to specific ayahs
+        // This is a simplified implementation - you would need proper page-to-ayah mapping
+        Alert.alert(
+          "Audio Playback",
+          "Audio for Mushaf pages requires page-to-ayah mapping. Would you like to play a sample recitation?",
+          [
+            { text: "Cancel", style: "cancel" },
+            {
+              text: "Play Sample",
+              onPress: async () => {
+                try {
+                  // Get available reciters from DataService
+                  const reciters = dataService.getAvailableReciters();
+                  console.log("Available reciters:", reciters);
+
+                  // Try to get recitation for first ayah of first sura as example
+                  const recitation = await dataService.getVerseRecitation(
+                    1,
+                    1,
+                    "abdul-basit"
+                  );
+                  if (recitation) {
+                    console.log("Found recitation:", recitation);
+                    // Here you would play the audio using your audio context
+                    Alert.alert(
+                      "Success",
+                      "Recitation data loaded successfully"
+                    );
+                  } else {
+                    Alert.alert(
+                      "Info",
+                      "Recitation data not available for this ayah"
+                    );
+                  }
+                } catch (error) {
+                  console.error("Error loading recitation:", error);
+                  Alert.alert("Error", "Failed to load recitation data");
+                }
+              },
+            },
+          ]
+        );
+      }
+    } catch (error) {
+      console.error("Error handling audio:", error);
+      Alert.alert("Error", "Failed to handle audio playback");
     }
+  };
+
+  const toggleBookmark = async () => {
+    try {
+      const isCurrentlyBookmarked = bookmarks.some(
+        (b) => b.page === currentPage
+      );
+      let updatedBookmarks;
+
+      if (isCurrentlyBookmarked) {
+        // Remove bookmark
+        updatedBookmarks = bookmarks.filter((b) => b.page !== currentPage);
+        Alert.alert(
+          "Bookmark Removed",
+          `Page ${currentPage} removed from bookmarks`
+        );
+      } else {
+        // Add bookmark
+        const newBookmark = {
+          id: Date.now(),
+          page: currentPage,
+          title: `Page ${currentPage}`,
+          timestamp: new Date().toISOString(),
+        };
+        updatedBookmarks = [...bookmarks, newBookmark];
+        Alert.alert("Bookmark Added", `Page ${currentPage} added to bookmarks`);
+      }
+
+      setBookmarks(updatedBookmarks);
+      await dataService.saveBookmarks(updatedBookmarks);
+    } catch (error) {
+      console.error("Error toggling bookmark:", error);
+      Alert.alert("Error", "Failed to save bookmark");
+    }
+  };
+
+  const goToSura = (sura) => {
+    // Basic sura-to-page mapping (this should be improved with actual data)
+    const suraToPageMap = {
+      1: 1, // Al-Fatihah
+      2: 2, // Al-Baqarah
+      3: 50, // Ali Imran
+      4: 77, // An-Nisa
+      5: 106, // Al-Ma'idah
+      6: 128, // Al-An'am
+      7: 151, // Al-A'raf
+      8: 177, // Al-Anfal
+      9: 187, // At-Tawbah
+      10: 208, // Yunus
+      11: 221, // Hud
+      12: 235, // Yusuf
+      13: 249, // Ar-Ra'd
+      14: 255, // Ibrahim
+      15: 262, // Al-Hijr
+      16: 267, // An-Nahl
+      17: 282, // Al-Isra
+      18: 293, // Al-Kahf
+      19: 305, // Maryam
+      20: 312, // Ta-Ha
+      21: 322, // Al-Anbiya
+      22: 332, // Al-Hajj
+      23: 342, // Al-Mu'minun
+      24: 350, // An-Nur
+      25: 359, // Al-Furqan
+      26: 367, // Ash-Shu'ara
+      27: 377, // An-Naml
+      28: 385, // Al-Qasas
+      29: 396, // Al-Ankabut
+      30: 404, // Ar-Rum
+    };
+
+    const targetPage = suraToPageMap[sura.id] || 1;
+    navigateToPage(targetPage);
+    setShowSuraFilter(false);
+  };
+
+  const goToPara = (para) => {
+    // Basic para-to-page mapping (30 paras across 610 pages)
+    const paraToPageMap = {
+      1: 1,
+      2: 22,
+      3: 42,
+      4: 62,
+      5: 82,
+      6: 102,
+      7: 122,
+      8: 142,
+      9: 162,
+      10: 182,
+      11: 202,
+      12: 222,
+      13: 242,
+      14: 262,
+      15: 282,
+      16: 302,
+      17: 322,
+      18: 342,
+      19: 362,
+      20: 382,
+      21: 402,
+      22: 422,
+      23: 442,
+      24: 462,
+      25: 482,
+      26: 502,
+      27: 522,
+      28: 542,
+      29: 562,
+      30: 582,
+    };
+
+    const targetPage = paraToPageMap[para.id] || 1;
+    navigateToPage(targetPage);
+    setShowParaFilter(false);
+  };
+
+  const goToAyah = (suraId, ayahNumber) => {
+    // This would need ayah-to-page mapping - for now just go to sura
+    const sura = suraList.find((s) => s.id === suraId);
+    if (sura) {
+      goToSura(sura);
+    }
+    setShowAyahFilter(false);
+  };
+
+  const renderAyahModal = () => (
+    <Modal
+      visible={showAyahFilter}
+      transparent={true}
+      animationType="slide"
+      onRequestClose={() => setShowAyahFilter(false)}
+    >
+      <View style={styles.modalOverlay}>
+        <View style={[styles.listModal, { backgroundColor: colors.surface }]}>
+          <View style={styles.modalHeader}>
+            <Text style={[styles.modalTitle, { color: colors.text }]}>
+              Go to Ayah
+            </Text>
+            <TouchableOpacity onPress={() => setShowAyahFilter(false)}>
+              <Ionicons name="close" size={24} color={colors.text} />
+            </TouchableOpacity>
+          </View>
+
+          <View style={{ padding: 20 }}>
+            <Text
+              style={[
+                styles.filterText,
+                { color: colors.text, marginBottom: 16 },
+              ]}
+            >
+              This feature requires detailed ayah-to-page mapping data.
+            </Text>
+            <Text
+              style={[
+                styles.filterText,
+                { color: colors.textSecondary, fontSize: 14 },
+              ]}
+            >
+              For now, please use the Sura navigation to find specific ayahs.
+            </Text>
+          </View>
+        </View>
+      </View>
+    </Modal>
+  );
+
+  const goToBookmark = (bookmark) => {
+    navigateToPage(bookmark.page);
+    setShowBookmarks(false);
   };
 
   const handlePageInputSubmit = () => {
@@ -158,71 +387,26 @@ const MushafScreen = ({ route }) => {
     }
   };
 
-  const toggleBookmark = async () => {
-    try {
-      const isBookmarked = bookmarks.some((b) => b.page === currentPage);
-
-      if (isBookmarked) {
-        const updatedBookmarks = bookmarks.filter(
-          (b) => b.page !== currentPage
-        );
-        await dataService.saveBookmarks(updatedBookmarks);
-        setBookmarks(updatedBookmarks);
-      } else {
-        const newBookmark = {
-          page: currentPage,
-          timestamp: new Date().toISOString(),
-          note: `Page ${currentPage}`,
-        };
-        const updatedBookmarks = [...bookmarks, newBookmark];
-        await dataService.saveBookmarks(updatedBookmarks);
-        setBookmarks(updatedBookmarks);
-      }
-    } catch (error) {
-      console.error("Error toggling bookmark:", error);
-    }
-  };
-
-  const goToBookmark = (bookmark) => {
-    navigateToPage(bookmark.page);
-    setShowBookmarks(false);
-  };
-
-  const goToSura = (sura) => {
-    // This would need sura-to-page mapping from your data
-    Alert.alert(
-      "Navigate to Sura",
-      `Navigate to ${sura.name} - Page mapping needed`
-    );
-    setShowSuraFilter(false);
-  };
-
-  const goToPara = (para) => {
-    // This would need para-to-page mapping from your data
-    Alert.alert(
-      "Navigate to Para",
-      `Navigate to ${para.name} - Page mapping needed`
-    );
-    setShowParaFilter(false);
-  };
-
   const renderTopControls = () => {
     if (!showControls) return null;
 
     const isBookmarked = bookmarks.some((b) => b.page === currentPage);
 
     return (
-      <View
-        style={[styles.topControls, { backgroundColor: colors.surface + "E6" }]}
-      >
-        <TouchableOpacity
-          style={styles.controlButton}
-          onPress={() => router.back()}
+      <>
+        <View
+          style={[
+            styles.topControls,
+            { backgroundColor: colors.surface + "E6" },
+          ]}
         >
-          <Ionicons name="arrow-back" size={24} color={colors.text} />
-        </TouchableOpacity>
+          <TouchableOpacity
+            style={styles.controlButton}
+            onPress={() => router.back()}
+          >
+            <Ionicons name="arrow-back" size={24} color={colors.text} />
+          </TouchableOpacity>
 
-        <View style={styles.pageInfo}>
           <TouchableOpacity
             onPress={() => setShowPageNavigator(true)}
             style={styles.pageButton}
@@ -231,89 +415,85 @@ const MushafScreen = ({ route }) => {
               Page {currentPage} / {totalPages}
             </Text>
           </TouchableOpacity>
+
+          <View style={styles.topRightControls}>
+            <TouchableOpacity
+              style={[
+                styles.controlButton,
+                {
+                  backgroundColor: isBookmarked
+                    ? colors.primary
+                    : "transparent",
+                },
+              ]}
+              onPress={toggleBookmark}
+            >
+              <Ionicons
+                name={isBookmarked ? "bookmark" : "bookmark-outline"}
+                size={20}
+                color={isBookmarked ? "white" : colors.text}
+              />
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={styles.controlButton}
+              onPress={() => setShowFilters(true)}
+            >
+              <Ionicons name="filter" size={20} color={colors.text} />
+            </TouchableOpacity>
+          </View>
         </View>
 
-        <View style={styles.topRightControls}>
-          {/* Audio Toggle Button */}
+        {/* Bottom Navigation Controls */}
+        <View
+          style={[
+            styles.bottomNavigation,
+            { backgroundColor: colors.surface + "E6" },
+          ]}
+        >
           <TouchableOpacity
             style={[
-              styles.controlButton,
-              { backgroundColor: isPlaying ? colors.primary : "transparent" },
+              styles.navButton,
+              { opacity: currentPage <= minPage ? 0.3 : 1 },
             ]}
-            onPress={handleAudioToggle}
+            onPress={goToPreviousPage}
+            disabled={currentPage <= minPage}
           >
-            <Ionicons
-              name={isPlaying ? "pause" : "play"}
-              size={20}
-              color={isPlaying ? "white" : colors.text}
-            />
+            <Ionicons name="chevron-back" size={24} color={colors.primary} />
+            <Text style={[styles.navButtonText, { color: colors.primary }]}>
+              Previous
+            </Text>
           </TouchableOpacity>
+
+          <View style={styles.pageIndicatorContainer}>
+            <TouchableOpacity
+              style={[
+                styles.currentPageButton,
+                { backgroundColor: colors.primary },
+              ]}
+              onPress={() => setShowPageNavigator(true)}
+            >
+              <Text style={[styles.currentPageText, { color: "white" }]}>
+                {currentPage}
+              </Text>
+            </TouchableOpacity>
+          </View>
 
           <TouchableOpacity
             style={[
-              styles.controlButton,
-              {
-                backgroundColor: isBookmarked ? colors.primary : "transparent",
-              },
+              styles.navButton,
+              { opacity: currentPage >= maxPage ? 0.3 : 1 },
             ]}
-            onPress={toggleBookmark}
+            onPress={goToNextPage}
+            disabled={currentPage >= maxPage}
           >
-            <Ionicons
-              name={isBookmarked ? "bookmark" : "bookmark-outline"}
-              size={24}
-              color={isBookmarked ? "white" : colors.text}
-            />
-          </TouchableOpacity>
-
-          <TouchableOpacity
-            style={styles.controlButton}
-            onPress={() => setShowFilters(true)}
-          >
-            <Ionicons name="filter" size={24} color={colors.text} />
+            <Text style={[styles.navButtonText, { color: colors.primary }]}>
+              Next
+            </Text>
+            <Ionicons name="chevron-forward" size={24} color={colors.primary} />
           </TouchableOpacity>
         </View>
-      </View>
-    );
-  };
-
-  const renderBottomControls = () => {
-    if (!showControls) return null;
-
-    return (
-      <View
-        style={[
-          styles.bottomControls,
-          { backgroundColor: colors.surface + "E6" },
-        ]}
-      >
-        <TouchableOpacity
-          style={[
-            styles.navigationButton,
-            { opacity: currentPage <= 1 ? 0.5 : 1 },
-          ]}
-          onPress={goToPreviousPage}
-          disabled={currentPage <= 1}
-        >
-          <Ionicons name="chevron-back" size={28} color={colors.primary} />
-          <Text style={[styles.navButtonText, { color: colors.primary }]}>
-            Previous
-          </Text>
-        </TouchableOpacity>
-
-        <TouchableOpacity
-          style={[
-            styles.navigationButton,
-            { opacity: currentPage >= maxPage ? 0.5 : 1 },
-          ]}
-          onPress={goToNextPage}
-          disabled={currentPage >= maxPage}
-        >
-          <Text style={[styles.navButtonText, { color: colors.primary }]}>
-            Next
-          </Text>
-          <Ionicons name="chevron-forward" size={28} color={colors.primary} />
-        </TouchableOpacity>
-      </View>
+      </>
     );
   };
 
@@ -674,11 +854,11 @@ const MushafScreen = ({ route }) => {
       </TouchableOpacity>
 
       {renderTopControls()}
-      {renderBottomControls()}
       {renderFiltersModal()}
       {renderPageNavigator()}
       {renderSuraFilter()}
       {renderParaFilter()}
+      {renderAyahModal()}
       {renderBookmarksModal()}
     </SafeAreaView>
   );
@@ -701,6 +881,7 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
     paddingHorizontal: 16,
     paddingVertical: 12,
+    paddingTop: 50, // Account for status bar
     zIndex: 1000,
   },
   controlButton: {
@@ -727,6 +908,88 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     gap: 8,
+  },
+  topControls: {
+    position: "absolute",
+    top: 0,
+    left: 0,
+    right: 0,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    paddingTop: 50, // Account for status bar
+    zIndex: 1000,
+  },
+  controlButton: {
+    padding: 8,
+    borderRadius: 20,
+    minWidth: 40,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  pageButton: {
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 20,
+    backgroundColor: "rgba(255,255,255,0.1)",
+  },
+  pageText: {
+    fontSize: 16,
+    fontWeight: "600",
+  },
+  topRightControls: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+  },
+  bottomNavigation: {
+    position: "absolute",
+    bottom: 0,
+    left: 0,
+    right: 0,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    paddingHorizontal: 20,
+    paddingVertical: 16,
+    zIndex: 1000,
+  },
+  navButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    borderRadius: 25,
+    backgroundColor: "rgba(255,255,255,0.1)",
+    minWidth: 100,
+    justifyContent: "center",
+  },
+  navButtonText: {
+    fontSize: 14,
+    fontWeight: "600",
+    marginHorizontal: 6,
+  },
+  pageIndicatorContainer: {
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  currentPageButton: {
+    width: 50,
+    height: 50,
+    borderRadius: 25,
+    alignItems: "center",
+    justifyContent: "center",
+    elevation: 4,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 4,
+  },
+  currentPageText: {
+    fontSize: 18,
+    fontWeight: "bold",
   },
   bottomControls: {
     position: "absolute",

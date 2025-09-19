@@ -1839,9 +1839,7 @@ export const getMushafPage = (pageNumber) => {
   }
 
   // If specific page is not available, return null
-  console.warn(
-    `Page ${pageNumber} not available. Currently only pages 1-10 are imported.`
-  );
+  console.warn(`Page ${pageNumber} not available. Available pages: 1-610`);
   return null;
 };
 

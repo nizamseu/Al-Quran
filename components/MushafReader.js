@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import {
   View,
   Image,
@@ -9,6 +9,8 @@ import {
   TouchableOpacity,
   Text,
   PanResponder,
+  Animated,
+  Easing,
 } from "react-native";
 import { useTheme } from "../contexts/ThemeContext";
 import { getMushafPage } from "../utils/mushafPages";
@@ -16,19 +18,44 @@ import { getMushafPage } from "../utils/mushafPages";
 const { width, height } = Dimensions.get("window");
 
 const MushafReader = ({ pageNumber, onSwipeLeft, onSwipeRight }) => {
+  console.log(
+    "MushafReader rendered with pageNumber:",
+    pageNumber,
+    "type:",
+    typeof pageNumber
+  );
+
   const { colors } = useTheme();
   const [loading, setLoading] = useState(true);
   const [imageData, setImageData] = useState(null);
+  const translateX = useRef(new Animated.Value(0)).current;
+  const opacity = useRef(new Animated.Value(1)).current;
 
   useEffect(() => {
+    console.log("MushafReader useEffect triggered, pageNumber:", pageNumber);
     loadPageData();
   }, [pageNumber]);
 
   const loadPageData = async () => {
     setLoading(true);
     try {
+      console.log("Loading page:", pageNumber);
       const pageFile = getMushafPage(pageNumber);
-      setImageData(pageFile.image);
+      console.log("Page file result:", pageFile);
+      console.log(
+        "Page file has image?",
+        pageFile && pageFile.image ? "YES" : "NO"
+      );
+      console.log("Page file image value:", pageFile?.image);
+
+      if (pageFile && pageFile.image) {
+        console.log("Setting image data for page:", pageNumber);
+        setImageData(pageFile.image);
+      } else {
+        console.error("No page data found for page:", pageNumber);
+        console.error("getMushafPage returned:", pageFile);
+        Alert.alert("Error", `Page ${pageNumber} data not found`);
+      }
     } catch (error) {
       console.error("Error loading page data:", error);
       Alert.alert("Error", "Failed to load page data");
@@ -37,31 +64,100 @@ const MushafReader = ({ pageNumber, onSwipeLeft, onSwipeRight }) => {
     }
   };
 
-  // Simple pan responder for swipe gestures
+  // Enhanced pan responder for smoother swipe gestures
   const panResponder = PanResponder.create({
     onMoveShouldSetPanResponder: (evt, gestureState) => {
-      // Only respond to horizontal gestures
+      // More sensitive horizontal gesture detection
       return (
         Math.abs(gestureState.dx) > Math.abs(gestureState.dy) &&
-        Math.abs(gestureState.dx) > 10
+        Math.abs(gestureState.dx) > 5
       );
     },
+    onPanResponderGrant: () => {
+      // Reset animation values when gesture starts
+      translateX.setOffset(translateX._value);
+      translateX.setValue(0);
+    },
     onPanResponderMove: (evt, gestureState) => {
-      // Optional: Add visual feedback during swipe
+      // Smooth follow movement with resistance at edges
+      const { dx } = gestureState;
+      const resistance = 0.7; // Add some resistance for better feel
+      translateX.setValue(dx * resistance);
+
+      // Optional: Add slight opacity change during swipe
+      const opacityValue = Math.max(0.7, 1 - Math.abs(dx) / (width * 0.8));
+      opacity.setValue(opacityValue);
     },
     onPanResponderRelease: (evt, gestureState) => {
-      const { dx } = gestureState;
-      const threshold = width * 0.25; // 25% of screen width
+      const { dx, vx } = gestureState;
+      const threshold = width * 0.15; // Reduced threshold for easier swiping
+      const velocityThreshold = 0.3;
 
-      if (Math.abs(dx) > threshold) {
-        if (dx > 0) {
-          // Swipe right - go to previous page
-          onSwipeRight && onSwipeRight();
-        } else {
-          // Swipe left - go to next page
-          onSwipeLeft && onSwipeLeft();
-        }
+      translateX.flattenOffset();
+
+      // Check if swipe was fast enough or far enough
+      const shouldSwipe =
+        Math.abs(dx) > threshold || Math.abs(vx) > velocityThreshold;
+
+      if (shouldSwipe) {
+        // Animate to complete the swipe
+        const toValue = dx > 0 ? width : -width;
+        Animated.parallel([
+          Animated.timing(translateX, {
+            toValue,
+            duration: 200,
+            easing: Easing.out(Easing.cubic),
+            useNativeDriver: true,
+          }),
+          Animated.timing(opacity, {
+            toValue: 0,
+            duration: 200,
+            useNativeDriver: true,
+          }),
+        ]).start(() => {
+          // Execute swipe callback
+          if (dx > 0) {
+            onSwipeRight && onSwipeRight();
+          } else {
+            onSwipeLeft && onSwipeLeft();
+          }
+
+          // Reset animation values
+          translateX.setValue(0);
+          opacity.setValue(1);
+        });
+      } else {
+        // Animate back to original position
+        Animated.parallel([
+          Animated.spring(translateX, {
+            toValue: 0,
+            tension: 100,
+            friction: 8,
+            useNativeDriver: true,
+          }),
+          Animated.timing(opacity, {
+            toValue: 1,
+            duration: 150,
+            useNativeDriver: true,
+          }),
+        ]).start();
       }
+    },
+    onPanResponderTerminate: () => {
+      // Reset if gesture is terminated
+      Animated.parallel([
+        Animated.spring(translateX, {
+          toValue: 0,
+          tension: 100,
+          friction: 8,
+          useNativeDriver: true,
+        }),
+        Animated.timing(opacity, {
+          toValue: 1,
+          duration: 150,
+          useNativeDriver: true,
+        }),
+      ]).start();
     },
   });
 
@@ -83,27 +179,79 @@ const MushafReader = ({ pageNumber, onSwipeLeft, onSwipeRight }) => {
 
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
-      <View style={styles.pageContainer} {...panResponder.panHandlers}>
-        {imageData && (
-          <Image
-            source={imageData}
-            style={styles.pageImage}
-            resizeMode="contain"
-          />
-        )}
+      <Animated.View
+        style={[
+          styles.pageContainer,
+          {
+            transform: [{ translateX }],
+            opacity,
+          },
+        ]}
+        {...panResponder.panHandlers}
+      >
+        {/* Hafizi Quran style border */}
+        <View
+          style={[styles.pageBorder, { borderColor: colors.primary + "30" }]}
+        >
+          <View
+            style={[styles.innerBorder, { borderColor: colors.primary + "20" }]}
+          >
+            {imageData ? (
+              <>
+                <Text
+                  style={{
+                    color: colors.text,
+                    textAlign: "center",
+                    marginBottom: 10,
+                  }}
+                >
+                  DEBUG: Showing image for page {pageNumber}
+                </Text>
+                <Image
+                  source={imageData}
+                  style={styles.pageImage}
+                  resizeMode="contain"
+                  onError={(error) => {
+                    console.error(
+                      "Image loading error:",
+                      error.nativeEvent.error
+                    );
+                    Alert.alert(
+                      "Error",
+                      `Failed to load image for page ${pageNumber}`
+                    );
+                  }}
+                  onLoad={() => {
+                    console.log(
+                      "Image loaded successfully for page:",
+                      pageNumber
+                    );
+                  }}
+                />
+              </>
+            ) : (
+              <View style={styles.fallbackContainer}>
+                <Text style={[styles.fallbackText, { color: colors.text }]}>
+                  DEBUG: Page {pageNumber} image not available - imageData:{" "}
+                  {JSON.stringify(imageData)}
+                </Text>
+              </View>
+            )}
+          </View>
+        </View>
 
-        {/* Invisible touch areas for navigation - fallback for touch */}
+        {/* Enhanced touch areas for navigation */}
         <TouchableOpacity
           style={styles.leftTouchArea}
           onPress={onSwipeRight}
-          activeOpacity={0.1}
+          activeOpacity={0}
         />
         <TouchableOpacity
           style={styles.rightTouchArea}
           onPress={onSwipeLeft}
-          activeOpacity={0.1}
+          activeOpacity={0}
         />
-      </View>
+      </Animated.View>
     </View>
   );
 };
@@ -125,12 +273,32 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: "center",
     alignItems: "center",
-    padding: 16,
+    padding: 12,
     position: "relative",
   },
+  pageBorder: {
+    borderWidth: 2,
+    borderRadius: 8,
+    padding: 8,
+    shadowColor: "#000",
+    shadowOffset: {
+      width: 0,
+      height: 4,
+    },
+    shadowOpacity: 0.1,
+    shadowRadius: 8,
+    elevation: 4,
+    backgroundColor: "#fefefe",
+  },
+  innerBorder: {
+    borderWidth: 1,
+    borderRadius: 4,
+    padding: 4,
+    backgroundColor: "#fff",
+  },
   pageImage: {
-    width: width - 32,
-    height: height - 120,
+    width: width - 64,
+    height: height - 160,
     maxWidth: "100%",
     maxHeight: "100%",
   },
@@ -139,16 +307,30 @@ const styles = StyleSheet.create({
     left: 0,
     top: 0,
     bottom: 0,
-    width: "25%",
+    width: "30%",
     backgroundColor: "transparent",
+    zIndex: 10,
   },
   rightTouchArea: {
     position: "absolute",
     right: 0,
     top: 0,
     bottom: 0,
-    width: "25%",
+    width: "30%",
     backgroundColor: "transparent",
+    zIndex: 10,
+  },
+  fallbackContainer: {
+    width: width - 64,
+    height: height - 160,
+    justifyContent: "center",
+    alignItems: "center",
+    backgroundColor: "#f5f5f5",
+    borderRadius: 4,
+  },
+  fallbackText: {
+    fontSize: 16,
+    textAlign: "center",
   },
 });
 

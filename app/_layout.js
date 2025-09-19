@@ -343,6 +343,13 @@ function Layout() {
           }}
         />
         <Drawer.Screen
+          name="mushaf"
+          options={{
+            drawerItemStyle: { display: "none" },
+            headerShown: false,
+          }}
+        />
+        <Drawer.Screen
           name="sura"
           options={{
             drawerItemStyle: { display: "none" },

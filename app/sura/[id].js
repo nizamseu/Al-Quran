@@ -12,7 +12,7 @@ import {
   Share,
   StatusBar,
 } from "react-native";
-import Clipboard from "@react-native-clipboard/clipboard";
+import * as Clipboard from "expo-clipboard";
 import { Stack, useLocalSearchParams, useRouter } from "expo-router";
 import { Ionicons, MaterialIcons } from "@expo/vector-icons";
 
@@ -250,7 +250,7 @@ Arabic: ${verse.text}
 
 ${translationTexts.join("\n\n")}`;
 
-      await Clipboard.setString(message);
+      await Clipboard.setStringAsync(message);
       Alert.alert("Copied", "Verse copied to clipboard");
     } catch (error) {
       console.error("Error copying verse:", error);
@@ -555,12 +555,12 @@ ${translationTexts.join("\n\n")}`;
                   </Text>
                   <View style={{ flexDirection: "row", gap: 4 }}>
                     <TouchableOpacity
-                      onPress={() => {
+                      onPress={async () => {
                         const message = `${sura.nameSimple} (${suraId}:${verse.ayahNumber})
                         
 TAFSIR: ${tafsir.name}
 ${tafsir.text}`;
-                        Clipboard.setString(message);
+                        await Clipboard.setStringAsync(message);
                         Alert.alert("Copied", "Tafsir copied to clipboard");
                       }}
                       style={{

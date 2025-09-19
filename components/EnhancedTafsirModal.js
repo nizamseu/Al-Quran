@@ -9,9 +9,9 @@ import {
   Alert,
   Dimensions,
   Share,
-  Clipboard,
   ActivityIndicator,
 } from "react-native";
+import * as Clipboard from "expo-clipboard";
 import { Ionicons, MaterialIcons } from "@expo/vector-icons";
 import { useTheme } from "../contexts/ThemeContext";
 import { useFont } from "../contexts/FontContext";
@@ -118,13 +118,13 @@ Shared from Al-Quran App`;
     Share.share({ message });
   };
 
-  const handleCopy = (content, source, type = "tafsir") => {
+  const handleCopy = async (content, source, type = "tafsir") => {
     const text = `${suraName} (${suraId}:${ayahNumber})
     
 ${type.toUpperCase()}: ${source}
 ${content}`;
 
-    Clipboard.setString(text);
+    await Clipboard.setStringAsync(text);
     Alert.alert("Copied", `${type} copied to clipboard`);
   };
 

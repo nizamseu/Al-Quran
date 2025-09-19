@@ -1,6 +1,7 @@
-import { View, Text } from "react-native";
+import { View, Text, TouchableOpacity } from "react-native";
 import React from "react";
-import { Stack } from "expo-router";
+import { Stack, router } from "expo-router";
+import { Ionicons } from "@expo/vector-icons";
 import { useLanguage } from "../../contexts/LanguageContext";
 import { useFont } from "../../contexts/FontContext";
 import { useTheme } from "../../contexts/ThemeContext";
@@ -9,19 +10,25 @@ const Layout = () => {
   const { colors, isDark } = useTheme();
   const { t } = useLanguage();
   const { getTextStyle } = useFont();
+
   return (
     <Stack>
       <Stack.Screen
         name="[id]"
         options={{
-          title: t("sura.details"),
           headerShown: true,
-          //   headerShown: false,
+          headerBackVisible: true,
+          headerBackTitleVisible: false,
           headerTitleAlign: "center",
-          // headerTitleStyle: {
-          //     ...getTextStyle("subtitle", "semiBold"),
-          //     color: colors.text,
-          // },
+          headerStyle: {
+            backgroundColor: colors.surface,
+          },
+          headerTintColor: colors.text,
+          headerTitleStyle: {
+            ...getTextStyle("subtitle", "semiBold"),
+            color: colors.text,
+          },
+          gestureEnabled: true,
         }}
       />
     </Stack>

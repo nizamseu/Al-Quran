@@ -337,6 +337,14 @@ function Layout() {
           }}
         />
         <Drawer.Screen
+          name="sura"
+          options={{
+            drawerItemStyle: { display: "none" },
+            headerShown: false,
+          }}
+        />
+
+        {/* <Drawer.Screen
           name="sura/[id]"
           options={{
             drawerItemStyle: { display: "none" },
@@ -361,7 +369,7 @@ function Layout() {
               </View>
             ),
           }}
-        />
+        /> */}
       </Drawer>
     </GestureHandlerRootView>
   );

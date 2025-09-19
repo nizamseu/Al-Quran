@@ -966,6 +966,7 @@ Shared from Al-Quran App`;
       <Stack.Screen
         options={{
           title: sura ? `${sura.nameBengali} (${sura.id})` : t("sura.details"),
+          gestureEnabled: true,
         }}
       />
       <View style={{ flex: 1, backgroundColor: colors.background }}>

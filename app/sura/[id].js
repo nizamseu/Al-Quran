@@ -61,6 +61,7 @@ export default function SuraDetailsScreen() {
     toggleBookmark,
     isBookmarked,
     updateReadingProgress,
+    updateSetting,
   } = useSettings();
   const {
     playSura,
@@ -93,8 +94,25 @@ export default function SuraDetailsScreen() {
   const [readingMode, setReadingMode] = useState(
     settings.readingMode || "translation"
   );
-  const [showTranslationInline, setShowTranslationInline] = useState(true);
-  const [showTafsirInline, setShowTafsirInline] = useState(false);
+  const [showTranslationInline, setShowTranslationInline] = useState(
+    settings.showTranslationInline !== undefined
+      ? settings.showTranslationInline
+      : true
+  );
+  const [showTafsirInline, setShowTafsirInline] = useState(
+    settings.showTafsirInline !== undefined ? settings.showTafsirInline : false
+  );
+
+  // Toggle handlers with persistence
+  const handleToggleTranslationInline = (value) => {
+    setShowTranslationInline(value);
+    updateSetting("showTranslationInline", value);
+  };
+
+  const handleToggleTafsirInline = (value) => {
+    setShowTafsirInline(value);
+    updateSetting("showTafsirInline", value);
+  };
   const [showReciterSelector, setShowReciterSelector] = useState(false);
   const [availableReciters, setAvailableReciters] = useState([]);
 
@@ -271,19 +289,24 @@ ${translationTexts.join("\n\n")}`;
       }))
       .filter((t) => t.text);
 
-    // Get tafsir for this verse if inline display is enabled
-    const verseTafsir = showTafsirInline
-      ? selectedTafsir
-          .map((tafsir) => ({
-            ...tafsir,
-            text: dataService.getTafsir(
-              verse.verseKey,
-              currentLanguage,
-              tafsir.id
-            ),
-          }))
-          .filter((t) => t.text)
-      : [];
+    // Get tafsir for this verse
+    const verseTafsir = selectedTafsir
+      .map((tafsir) => ({
+        ...tafsir,
+        text: dataService.getTafsir(verse.verseKey, currentLanguage, tafsir.id),
+      }))
+      .filter((t) => t.text);
+
+    // Debug logs for troubleshooting
+    if (verse.ayahNumber === 1) {
+      console.log("🔍 Verse 1 Debug Info:");
+      console.log("showTranslationInline:", showTranslationInline);
+      console.log("showTafsirInline:", showTafsirInline);
+      console.log("selectedTranslations:", selectedTranslations.length);
+      console.log("selectedTafsir:", selectedTafsir.length);
+      console.log("verseTranslations found:", verseTranslations.length);
+      console.log("verseTafsir found:", verseTafsir.length);
+    }
 
     // Check if any tafsir is available for this verse
     const hasTafsir = selectedTafsir.some((tafsir) =>
@@ -434,92 +457,90 @@ ${translationTexts.join("\n\n")}`;
         </Text>
 
         {/* Multiple Translations */}
-        {showTranslationInline &&
-          (readingMode === "translation" || readingMode === "both") &&
-          verseTranslations.length > 0 && (
-            <View style={{ marginBottom: 12 }}>
-              {verseTranslations.map((translation, index) => (
+        {showTranslationInline && verseTranslations.length > 0 && (
+          <View style={{ marginBottom: 12 }}>
+            {verseTranslations.map((translation, index) => (
+              <View
+                key={translation.id}
+                style={{
+                  backgroundColor: colors.primaryLight + "10",
+                  padding: 12,
+                  borderRadius: 8,
+                  marginBottom: index < verseTranslations.length - 1 ? 8 : 0,
+                  borderLeftWidth: 3,
+                  borderLeftColor: colors.primary,
+                }}
+              >
                 <View
-                  key={translation.id}
                   style={{
-                    backgroundColor: colors.primaryLight + "10",
-                    padding: 12,
-                    borderRadius: 8,
-                    marginBottom: index < verseTranslations.length - 1 ? 8 : 0,
-                    borderLeftWidth: 3,
-                    borderLeftColor: colors.primary,
+                    flexDirection: "row",
+                    justifyContent: "space-between",
+                    alignItems: "center",
+                    marginBottom: 4,
                   }}
                 >
+                  <Text
+                    style={{
+                      fontSize: 12,
+                      color: colors.primary,
+                      fontWeight: "600",
+                    }}
+                  >
+                    {translation.name}
+                  </Text>
                   <View
                     style={{
                       flexDirection: "row",
-                      justifyContent: "space-between",
-                      alignItems: "center",
-                      marginBottom: 4,
+                      gap: 4,
                     }}
                   >
-                    <Text
+                    <TouchableOpacity
+                      onPress={() => handleCopyVerse(verse)}
                       style={{
-                        fontSize: 12,
-                        color: colors.primary,
-                        fontWeight: "600",
+                        padding: 4,
+                        borderRadius: 8,
+                        backgroundColor: colors.primaryLight + "20",
                       }}
                     >
-                      {translation.name}
-                    </Text>
-                    <View
+                      <Ionicons
+                        name="copy-outline"
+                        size={14}
+                        color={colors.primary}
+                      />
+                    </TouchableOpacity>
+                    <TouchableOpacity
+                      onPress={() => handleShareVerse(verse)}
                       style={{
-                        flexDirection: "row",
-                        gap: 4,
+                        padding: 4,
+                        borderRadius: 8,
+                        backgroundColor: colors.primaryLight + "20",
                       }}
                     >
-                      <TouchableOpacity
-                        onPress={() => handleCopyVerse(verse)}
-                        style={{
-                          padding: 4,
-                          borderRadius: 8,
-                          backgroundColor: colors.primaryLight + "20",
-                        }}
-                      >
-                        <Ionicons
-                          name="copy-outline"
-                          size={14}
-                          color={colors.primary}
-                        />
-                      </TouchableOpacity>
-                      <TouchableOpacity
-                        onPress={() => handleShareVerse(verse)}
-                        style={{
-                          padding: 4,
-                          borderRadius: 8,
-                          backgroundColor: colors.primaryLight + "20",
-                        }}
-                      >
-                        <Ionicons
-                          name="share-outline"
-                          size={14}
-                          color={colors.primary}
-                        />
-                      </TouchableOpacity>
-                    </View>
+                      <Ionicons
+                        name="share-outline"
+                        size={14}
+                        color={colors.primary}
+                      />
+                    </TouchableOpacity>
                   </View>
-                  <Text
-                    style={[
-                      currentLanguage === "bn"
-                        ? getBengaliTextStyle()
-                        : getTextStyle("body"),
-                      {
-                        lineHeight: 24,
-                        color: colors.text,
-                      },
-                    ]}
-                  >
-                    {translation.text}
-                  </Text>
                 </View>
-              ))}
-            </View>
-          )}
+                <Text
+                  style={[
+                    currentLanguage === "bn"
+                      ? getBengaliTextStyle()
+                      : getTextStyle("body"),
+                    {
+                      lineHeight: 24,
+                      color: colors.text,
+                    },
+                  ]}
+                >
+                  {translation.text}
+                </Text>
+              </View>
+            ))}
+          </View>
+        )}
 
         {/* Inline Tafsir */}
         {showTafsirInline && verseTafsir.length > 0 && (
@@ -1136,7 +1157,9 @@ Shared from Al-Quran App`;
                   ? colors.primary + "20"
                   : colors.border + "20",
               }}
-              onPress={() => setShowTranslationInline(!showTranslationInline)}
+              onPress={() =>
+                handleToggleTranslationInline(!showTranslationInline)
+              }
             >
               <Ionicons
                 name={
@@ -1173,7 +1196,7 @@ Shared from Al-Quran App`;
                   ? colors.warning + "20"
                   : colors.border + "20",
               }}
-              onPress={() => setShowTafsirInline(!showTafsirInline)}
+              onPress={() => handleToggleTafsirInline(!showTafsirInline)}
             >
               <Ionicons
                 name={

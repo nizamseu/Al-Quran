@@ -963,7 +963,11 @@ Shared from Al-Quran App`;
 
   return (
     <>
-      <Stack.Screen options={{ title: sura.nameBengali }} />
+      <Stack.Screen
+        options={{
+          title: sura ? `${sura.nameBengali} (${sura.id})` : t("sura.details"),
+        }}
+      />
       <View style={{ flex: 1, backgroundColor: colors.background }}>
         <StatusBar
           backgroundColor={colors.surface}

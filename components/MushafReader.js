@@ -28,6 +28,7 @@ const MushafReader = ({ pageNumber, onSwipeLeft, onSwipeRight }) => {
   const { colors } = useTheme();
   const [loading, setLoading] = useState(true);
   const [imageData, setImageData] = useState(null);
+  const [debugInfo, setDebugInfo] = useState("");
   const translateX = useRef(new Animated.Value(0)).current;
   const opacity = useRef(new Animated.Value(1)).current;
 
@@ -37,29 +38,37 @@ const MushafReader = ({ pageNumber, onSwipeLeft, onSwipeRight }) => {
   }, [pageNumber]);
 
   const loadPageData = async () => {
+    console.log("=== loadPageData started for page:", pageNumber);
     setLoading(true);
+    setDebugInfo(`Loading page ${pageNumber}...`);
+
     try {
-      console.log("Loading page:", pageNumber);
+      console.log("Calling getMushafPage with:", pageNumber);
       const pageFile = getMushafPage(pageNumber);
-      console.log("Page file result:", pageFile);
+      console.log("getMushafPage returned:", pageFile);
+      console.log("pageFile type:", typeof pageFile);
       console.log(
-        "Page file has image?",
+        "pageFile has image?",
         pageFile && pageFile.image ? "YES" : "NO"
       );
-      console.log("Page file image value:", pageFile?.image);
 
-      if (pageFile && pageFile.image) {
+      if (pageFile?.image) {
+        console.log("Page file image value:", pageFile.image);
         console.log("Setting image data for page:", pageNumber);
         setImageData(pageFile.image);
+        setDebugInfo(`Page ${pageNumber} loaded successfully`);
       } else {
-        console.error("No page data found for page:", pageNumber);
-        console.error("getMushafPage returned:", pageFile);
-        Alert.alert("Error", `Page ${pageNumber} data not found`);
+        const errorMsg = `No image data found for page ${pageNumber}. pageFile: ${JSON.stringify(pageFile)}`;
+        console.error(errorMsg);
+        setDebugInfo(errorMsg);
+        // Don't show alert immediately, let's see the debug info first
       }
     } catch (error) {
-      console.error("Error loading page data:", error);
-      Alert.alert("Error", "Failed to load page data");
+      const errorMsg = `Error loading page ${pageNumber}: ${error.message}`;
+      console.error(errorMsg, error);
+      setDebugInfo(errorMsg);
     } finally {
+      console.log("=== loadPageData completed for page:", pageNumber);
       setLoading(false);
     }
   };
@@ -232,8 +241,23 @@ const MushafReader = ({ pageNumber, onSwipeLeft, onSwipeRight }) => {
             ) : (
               <View style={styles.fallbackContainer}>
                 <Text style={[styles.fallbackText, { color: colors.text }]}>
-                  DEBUG: Page {pageNumber} image not available - imageData:{" "}
-                  {JSON.stringify(imageData)}
+                  DEBUG: Page {pageNumber} image not available
+                </Text>
+                <Text
+                  style={[
+                    styles.fallbackText,
+                    { color: colors.text, fontSize: 12, marginTop: 10 },
+                  ]}
+                >
+                  Debug Info: {debugInfo}
+                </Text>
+                <Text
+                  style={[
+                    styles.fallbackText,
+                    { color: colors.text, fontSize: 12, marginTop: 5 },
+                  ]}
+                >
+                  imageData: {JSON.stringify(imageData)}
                 </Text>
               </View>
             )}
